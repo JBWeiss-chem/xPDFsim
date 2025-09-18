@@ -1,6 +1,6 @@
 # xPDFsim
 
-Simple simulation of X-ray pair distribution functions. Read the documentation [here](https://pip.pypa.io/en/stable/)
+Simple simulation of X-ray pair distribution functions. Read the documentation [here](https://pip.pypa.io/en/stable/).
 
 ## Features
 
