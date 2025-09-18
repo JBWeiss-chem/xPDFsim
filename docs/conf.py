@@ -25,3 +25,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+html_context = {
+    "display_github": True,
+    "github_user": "JBWeiss-chem",
+    "github_repo": "xPDFsim",
+    "github_version": "main", # or "master", or a specific branch
+    "conf_py_path": "/docs/", # Path to your conf.py file from the root
+}
