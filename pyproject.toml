@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xPDFsim"
+version = "0.0.1"
+license = "GPL-3.0-or-later"
+description = "Simple simulation of X-ray pair distribution functions."
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["xPDF", "disordered materials", "simulation", "crystallography", "scattering", "X-ray"]
+authors = [
+    { name = "Jan-Benedikt Weiß" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+	'Operating System :: OS Independent',     
+]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "pymatgen",
+    "pandas",
+    "bokeh"
+    ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[project.scripts]
+xPDFsim = "xPDFsim.xPDFsim:cli"
+
+[project.urls]
+Repository = "https://github.com/JBWeiss-chem/xPDFsim"
+Documentation = "coming soon"
