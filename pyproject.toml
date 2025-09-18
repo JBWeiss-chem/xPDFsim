@@ -36,4 +36,4 @@ xPDFsim = "xPDFsim.xPDFsim:cli"
 
 [project.urls]
 Repository = "https://github.com/JBWeiss-chem/xPDFsim"
-Documentation = "coming soon"
+Documentation = "https://xpdfsim.readthedocs.io"
