@@ -1,0 +1,161 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; xPDFsim  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Usage" href="Usage.html" />
+    <link rel="prev" title="Installation" href="Installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            xPDFsim
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#various-pair-distribution-functions">Various pair distribution functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sources">Sources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Usage.html">Usage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xPDFsim</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Introduction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<section id="various-pair-distribution-functions">
+<h2>Various pair distribution functions<a class="headerlink" href="#various-pair-distribution-functions" title="Link to this heading"></a></h2>
+<p>There is a plethora of different pair distribution functions and various definitions. In this code, the definitions according to the book <em>Underneath the Bragg Peaks</em> by Takeshi Egami and Simon J.L. Billinge are used. <sup>1</sup> These are also the definitions used in the code <em>PDFgetX3</em>. <sup>2</sup>  Let us start with the following function:</p>
+<div class="math notranslate nohighlight">
+\[R_{ij}(r) = \frac{1}{N}\ \frac{K_i K_j}{\langle K \rangle^2}\ n_{ij}(r)\]</div>
+<div class="math notranslate nohighlight">
+\[R(r) = \displaystyle\sum_{i,j=1}^{n} R_{ij}(r)\]</div>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="_images/NaCl_R_r.png"><img alt="_images/NaCl_R_r.png" src="_images/NaCl_R_r.png" style="width: 588.0px; height: 336.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Computed G(r) function of NaCl.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Herein, <span class="math notranslate nohighlight">\(n_{ij}(r)\)</span> is the number of atoms of type j between distances <span class="math notranslate nohighlight">\(r\)</span> and <span class="math notranslate nohighlight">\(r+\mathrm{d}r\)</span> from atoms of type i, <span class="math notranslate nohighlight">\(N\)</span> is the number of atoms in the unit cell, <span class="math notranslate nohighlight">\(K_i\)</span> and <span class="math notranslate nohighlight">\(K_i\)</span> are the atomic numbers if atoms i and j, and <span class="math notranslate nohighlight">\(\langle K \rangle\)</span> is the average atomic number of all atoms in the unit cell. While <span class="math notranslate nohighlight">\(R(r)\)</span> is a very intuitive function, it is not commonly used because it oscillates around <span class="math notranslate nohighlight">\(4\pi\rho r^2\)</span> (with the number density <span class="math notranslate nohighlight">\(\rho\)</span>), making it unpractical for plotting. An alternative function is:</p>
+<div class="math notranslate nohighlight">
+\[g_{ij}(r) = \frac{R_{ij}(r)}{4\pi\rho r^2}\]</div>
+<div class="math notranslate nohighlight">
+\[g(r) = \displaystyle\sum_{i,j=1}^{n} g_{ij}(r)\]</div>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="_images/NaCl_g_r.png"><img alt="_images/NaCl_g_r.png" src="_images/NaCl_g_r.png" style="width: 588.0px; height: 336.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Computed g(r) function of NaCl.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><span class="math notranslate nohighlight">\(g(r)\)</span> oscillates around 1 and is therefore much nicer to plot than  <span class="math notranslate nohighlight">\(R(r)\)</span>. This is the default function used in xPDFsim. However, to obtain one of these functions from experimental data, one needs to make assumptions about the number density of the material. The function most commonly obtained from experimental data is:</p>
+<div class="math notranslate nohighlight">
+\[G(r) = \frac{R(r)}{r}-4\pi\rho r\mathrm{d}r\]</div>
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="_images/NaCl_G_r-2.png"><img alt="_images/NaCl_G_r-2.png" src="_images/NaCl_G_r-2.png" style="width: 588.0px; height: 336.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Computed G(r) function of NaCl.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>In contrast to the functions above, <span class="math notranslate nohighlight">\(G(r)\)</span> cannot be expressed as a linear combination of the underlying element-element correlations.</p>
+</section>
+<section id="sources">
+<h2>Sources<a class="headerlink" href="#sources" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Egami, T. &amp; Billinge, S. J. L. <em>Underneath the Bragg Peaks: Structural Analysis of Complex Materials</em> (Pergamon, 2003).</p></li>
+<li><p>Juhás, P., Davis, T., Farrow, C. L. &amp; Billinge, S. J. L. PDFgetX3: a rapid and highly automatable program for processing powder diffraction data into total scattering pair distribution functions. J. Appl. Crystallogr. 46, 560–566 (2013).</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Usage.html" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Jan-Benedikt Weiß.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
