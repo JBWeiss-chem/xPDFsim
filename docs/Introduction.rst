@@ -8,7 +8,7 @@ Various pair distribution functions
 There is a plethora of different pair distribution functions and various definitions. In this code, the definitions according to the book *Underneath the Bragg Peaks* by Takeshi Egami and Simon J.L. Billinge are used. :sup:`1` These are also the definitions used in the code *PDFgetX3*. :sup:`2`  Let us start with the following function:
 
 .. math::
-  R_{ij}(r) = \frac{1}{N}\ \frac{K_i K_j}{\langle K \rangle^2}\ n_{ij}(r)
+  R_{ij}(r) = \frac{1}{N\mathrm{d}r}\ \frac{K_i K_j}{\langle K \rangle^2}\ n_{ij}(r)
 .. math::
   R(r) = \displaystyle\sum_{i,j=1}^{n} R_{ij}(r)
   
@@ -34,7 +34,7 @@ Herein, :math:`n_{ij}(r)` is the number of atoms of type j between distances :ma
 :math:`g(r)` oscillates around 1 and is therefore much nicer to plot than  :math:`R(r)`. This is the default function used in xPDFsim. However, to obtain one of these functions from experimental data, one needs to make assumptions about the number density of the material. The function most commonly obtained from experimental data is:
   
 .. math::
-  G(r) = \frac{R(r)}{r}-4\pi\rho r\mathrm{d}r
+  G(r) = \frac{R(r)}{r}-4\pi\rho r
   
 .. figure:: NaCl_G_r-2.png
    :scale: 20 %

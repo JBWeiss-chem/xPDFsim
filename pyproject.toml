@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xPDFsim"
-version = "0.0.1"
+version = "0.0.2"
 license = "GPL-3.0-or-later"
 description = "Simple simulation of X-ray pair distribution functions."
 readme = "README.md"

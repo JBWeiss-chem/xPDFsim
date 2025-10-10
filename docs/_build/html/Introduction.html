@@ -70,7 +70,7 @@
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Introduction</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/Introduction.rst.txt" rel="nofollow"> View page source</a>
+              <a href="https://github.com/JBWeiss-chem/xPDFsim/blob/main/docs/Introduction.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -84,7 +84,7 @@
 <h2>Various pair distribution functions<a class="headerlink" href="#various-pair-distribution-functions" title="Link to this heading"></a></h2>
 <p>There is a plethora of different pair distribution functions and various definitions. In this code, the definitions according to the book <em>Underneath the Bragg Peaks</em> by Takeshi Egami and Simon J.L. Billinge are used. <sup>1</sup> These are also the definitions used in the code <em>PDFgetX3</em>. <sup>2</sup>  Let us start with the following function:</p>
 <div class="math notranslate nohighlight">
-\[R_{ij}(r) = \frac{1}{N}\ \frac{K_i K_j}{\langle K \rangle^2}\ n_{ij}(r)\]</div>
+\[R_{ij}(r) = \frac{1}{N\mathrm{d}r}\ \frac{K_i K_j}{\langle K \rangle^2}\ n_{ij}(r)\]</div>
 <div class="math notranslate nohighlight">
 \[R(r) = \displaystyle\sum_{i,j=1}^{n} R_{ij}(r)\]</div>
 <figure class="align-center" id="id1">
@@ -108,7 +108,7 @@
 </figure>
 <p><span class="math notranslate nohighlight">\(g(r)\)</span> oscillates around 1 and is therefore much nicer to plot than  <span class="math notranslate nohighlight">\(R(r)\)</span>. This is the default function used in xPDFsim. However, to obtain one of these functions from experimental data, one needs to make assumptions about the number density of the material. The function most commonly obtained from experimental data is:</p>
 <div class="math notranslate nohighlight">
-\[G(r) = \frac{R(r)}{r}-4\pi\rho r\mathrm{d}r\]</div>
+\[G(r) = \frac{R(r)}{r}-4\pi\rho r\]</div>
 <figure class="align-center" id="id3">
 <a class="reference internal image-reference" href="_images/NaCl_G_r-2.png"><img alt="_images/NaCl_G_r-2.png" src="_images/NaCl_G_r-2.png" style="width: 588.0px; height: 336.0px;" />
 </a>

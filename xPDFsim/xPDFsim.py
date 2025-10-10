@@ -174,10 +174,11 @@ def broaden_pdfs(df, sigma):
     """
     # Create an array of x-values for the broadened spectrum
     radii = df["radii"].to_numpy()
+    dr = radii[1] -radii[0]
     labels = df.columns.to_numpy()[1:]
     r_max = np.round(radii[-1]).astype(int) - 1
     radii_broad = np.linspace(0, r_max, r_max*50)
-    # Initialize y-values for the broadened spectrum
+    norm_factor = dr / (sigma * np.sqrt(2 * np.pi))
 
     # Put everything into a dataframe
     data = {'radii': radii_broad}
@@ -188,7 +189,7 @@ def broaden_pdfs(df, sigma):
         pdf_broad = np.zeros_like(radii_broad)
         # Apply Gaussian broadening for each mode
         for r, y in zip(radii, pdf):
-            pdf_broad += y * np.exp(-((radii_broad - r)**2) / (2 * sigma**2))
+            pdf_broad += y * norm_factor * np.exp(-((radii_broad - r)**2) / (2 * sigma**2))
         df_out[label] = pdf_broad
     return df_out.round(4)
 
@@ -296,7 +297,7 @@ def get_R_r(structure, r_max, dr, eps=1e-15, sigma=0.2):
 
             # Add X-ray contributions 
             K_j = K_is[element_id_sc]
-            R_r = 4*K_i*K_j / (norm_x_ray*total_atoms) * rdf
+            R_r = K_i*K_j / (norm_x_ray*total_atoms*dr) * rdf
 
             # add everything to lists of all partials
             R_rs.append(R_r)
@@ -333,14 +334,17 @@ def format_plot(p):
     p.legend.click_policy="hide"
 
 
-def plot_R_r(df, rho, sigma):
+def plot_R_r(df, rho, sigma, histogram):
     """
     Turns dataframe into R(r) plot
     """
     # Apply gaussian broadening
     df_broad = broaden_pdfs(df, sigma)
+    if histogram == True:
+        df_broad = df
     radii = df_broad["radii"].to_numpy()
     labels = df.columns.to_numpy()[1:-1]
+
     R_r_total = df_broad["total"].to_numpy()
 
     # Create plot window
@@ -360,7 +364,7 @@ def plot_R_r(df, rho, sigma):
     return df_broad
 
 
-def plot_g_r(df, rho, sigma):
+def plot_g_r(df, rho, sigma, histogram):
     """
     Turns dataframe into g(r) plot
     """
@@ -373,6 +377,8 @@ def plot_g_r(df, rho, sigma):
 
     # Apply gaussian broadening
     df_broad = broaden_pdfs(df, sigma)
+    if histogram == True:
+        df_broad = df
     radii_broad = df_broad["radii"].to_numpy()
     g_r_total = df_broad["total"].to_numpy()
 
@@ -393,20 +399,22 @@ def plot_g_r(df, rho, sigma):
     return df_broad
     
 
-def plot_G_r(df, rho, dr, sigma):
+def plot_G_r(df, rho, sigma, histogram):
     """
     Turns dataframe into G(r) plot
     """
     radii = df["radii"].to_numpy()
     total_R_r = df["total"].to_numpy()
 
-    G_r = 0.25 * total_R_r / radii - 4 * np.pi * rho * radii * dr
+    G_r = total_R_r / radii - 4 * np.pi * rho * radii
     data = {'radii': radii}
     data["total"] = G_r
     df_G_r = pd.DataFrame(data)
     
     # Apply gaussian broadening
     df_broad = broaden_pdfs(df_G_r, sigma)
+    if histogram == True:
+        df_broad = df_G_r
     radii_broad = df_broad["radii"].to_numpy()
     G_r_broad = df_broad["total"].to_numpy()
 
@@ -440,13 +448,13 @@ def main(args):
 
     print("Plotting...\n")
     if args.pdf_type == "R_r":
-        df_out = plot_R_r(df, rho, args.sigma)
+        df_out = plot_R_r(df, rho, args.sigma, args.histogram)
 
     if args.pdf_type == "g_r":
-        df_out = plot_g_r(df, rho, args.sigma)
+        df_out = plot_g_r(df, rho, args.sigma, args.histogram)
 
     if args.pdf_type== "G_r":
-        df_out = plot_G_r(df, rho, args.bin_width, args.sigma)
+        df_out = plot_G_r(df, rho, args.sigma, args.histogram)
 
     if args.output:
         compound = os.path.splitext(args.input_file)[0]
@@ -485,6 +493,10 @@ def cli():
                         type=float,
                         default=0.1,
                         help="Standard deviation value used for broadening of the PDF histograms. Default: 0.1")
+    
+    parser.add_argument("-his", "--histogram",
+                        action="store_true",
+                        help="If set, gausian broadening is disabled and the raw histogram will be plotted/exported.")
 
     parser.add_argument("-b", "--bin_width",
                         type=float,
