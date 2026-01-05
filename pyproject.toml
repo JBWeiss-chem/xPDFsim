@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xPDFsim"
-version = "0.0.2"
+version = "0.0.3"
 license = "GPL-3.0-or-later"
 description = "Simple simulation of X-ray pair distribution functions."
 readme = "README.md"
@@ -32,7 +32,7 @@ dependencies = [
 where = ["."]
 
 [project.scripts]
-xPDFsim = "xPDFsim.xPDFsim:cli"
+xPDFsim = "xPDFsim.main:cli"
 
 [project.urls]
 Repository = "https://github.com/JBWeiss-chem/xPDFsim"
