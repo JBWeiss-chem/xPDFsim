@@ -6,24 +6,19 @@ from .utils import *
 
 
 def gen_R_r(structure, r_max, dr):
-    """
-    The main function of the code. Takes a pymatgen Structure, calculates neighbor lists,
-    transforms them into a histogram, and finally transforms them into X-ray pair distribution
+    """Takes a pymatgen Structure, calculates neighbor lists, transforms them 
+    into a histogram, and finally transforms them into X-ray pair distribution 
     functions.
 
-    Parameters
-    ----------
-    atoms : pymatgen Structure object
-        The xPDF of this object shall be simulated
-    n_sc : Integer
-         Used to build a n_sc x n_sc x n_sc supercell
-         this shall be swapped by r_max for the pdf generation
-    dr : float
-        Delta r. Determines the spacing between successive radii over which g(r)
-        is computed.
-    eps : float, optional
-        Epsilon value used to find particles less than or equal to a distance 
-        in KDTree.
+    Args:
+        structure (pymatgen Stcucture): Structure of which the PDF shall be 
+        calculated.
+        r_max (float or int): Maximum r to which the PDF shall be calculated.
+        dr (float or int): Bin width of the histogram.
+
+    Returns:
+        dataframe: Histogramms of the R(r) functions.
+        float: Number density of the material.
     """
     # Setup for later
     total_atoms, c_is = get_fractions(structure.formula)
@@ -54,7 +49,8 @@ def gen_R_r(structure, r_max, dr):
     elif structure.is_ordered == False:
         print("Disordered structure detected.\n")
         print("Calculating PDF...\n")
-        rdf_sharp, rdf_sharp_weights = gen_sharp_rdf_dis(structure, element_pairs, r_max)
+        rdf_sharp, rdf_sharp_weights = gen_sharp_rdf_dis(structure, 
+                                                         element_pairs, r_max)
         hist_dict = gen_histogram_dis(rdf_sharp, rdf_sharp_weights, radii)
 
     hist_dict['radii'] = radii[:-1]
@@ -66,8 +62,17 @@ def gen_R_r(structure, r_max, dr):
     
 
 def gen_sharp_rdf(structure, element_pairs, r_max):
-    """
-    Generates neighbor list and sorts distances by elements.
+    """Generates neighbor list and sorts distances by element pairs.
+
+    Args:
+        structure (pymatgen Stcucture): Structure of which the PDF shall be 
+        calculated.
+        element_pairs (list): Element-element pairs of which the PDF shall be 
+        calculated.
+        r_max (float or int): Maximum r to which the PDF shall be calculated.
+
+    Returns:
+        dictionary: Contains all Element-Element PDFs.
     """
     all_neighbors = structure.get_all_neighbors(r=r_max+1)
     rdf_sharp = {}
@@ -86,9 +91,19 @@ def gen_sharp_rdf(structure, element_pairs, r_max):
 
 
 def gen_sharp_rdf_dis(structure, element_pairs, r_max):
-    """
-    Generates neighbor list and sorts distances by elements.
-    """
+    """Generates neighbor list and sorts distances by element pairs. For d
+    isordered materials.
+
+    Args:
+        structure (pymatgen Stcucture): Structure of which the PDF shall be 
+        calculated.
+        element_pairs (list): Element-element pairs of which the PDF shall be 
+        calculated.
+        r_max (float or int): Maximum r to which the PDF shall be calculated.
+
+    Returns:
+        dictionary: Contains all Element-Element PDFs.
+    """    
     all_neighbors = structure.get_all_neighbors(r=r_max+1)
     rdf_sharp = {}
     rdf_sharp_weights = {}
@@ -120,8 +135,15 @@ def gen_sharp_rdf_dis(structure, element_pairs, r_max):
 
 
 def gen_histogram(rdf_dict, radii):
-    """
-    Turns distance lists into histograms.
+    """Turns distance lists into histograms.
+
+    Args:
+        rdf_dict (dictionary): Contains lists of exact distances.
+        radii (numpy array): Radii corresponding to the to-be-generated 
+        histogram.
+
+    Returns:
+        dictionary: Contains arrays of the generated histograms.
     """
     hist_dict = {}
     for pair in rdf_dict:
@@ -130,18 +152,37 @@ def gen_histogram(rdf_dict, radii):
 
 
 def gen_histogram_dis(rdf_dict, rdf_dict_weights, radii):
+    """Turns distance lists into histograms. For disordered materials.
+
+    Args:
+        rdf_dict (dictionary): Contains lists of exact distances.
+        rdf_dict_weights (dictionary): Contains weights for each distance 
+        calculated from occupancies.
+        radii (numpy array): Radii corresponding to the to-be-generated 
+        histogram.
+
+    Returns:
+        dictionary: Contains arrays of the generated histograms.
     """
-    Turns distance lists into histograms.
-    """
+
     hist_dict = {}
     for pair in rdf_dict:
-        hist_dict[pair] = np.histogram(rdf_dict[pair], bins=radii, weights=rdf_dict_weights[pair])[0]
+        hist_dict[pair] = np.histogram(rdf_dict[pair], bins=radii, 
+                                       weights=rdf_dict_weights[pair])[0]
     return hist_dict
 
 
 def gen_R_r_df(hist_dict, norm_x_ray, total_atoms, dr):
-    """
-    Adds X-ray contributions to distance histograms.
+    """Adds X-ray contributions to histograms of distances.
+
+    Args:
+        hist_dict (dictionary): Contains histograms of distances.
+        norm_x_ray (float): Square of average atomic number in the structure.
+        total_atoms (int): Total atoms in the unit cell.
+        dr (float or int): Bin width of the histogram.
+
+    Returns:
+        dataframe: Contains R(r) functions.
     """
     R_r_dict = {}
     for pair in hist_dict:
