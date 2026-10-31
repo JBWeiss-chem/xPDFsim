@@ -35,7 +35,7 @@ MAX_BINS = 200_000
 BOND_TOLERANCE = 0.45           # Angstrom added to the sum of covalent radii
 MIN_BOND = 0.6                  # shorter contacts are alternative (disordered) positions
 TYPE_WINDOW = 0.02              # Angstrom, windows in which the strongest distance types are kept
-TYPES_PER_WINDOW = 8
+TYPES_PER_WINDOW = 12
 
 
 class ClientError(Exception):
@@ -144,7 +144,7 @@ def distance_types(structure, r_max):
     Pairs of the same two site labels at the same distance (to 0.001 Å) are
     symmetry equivalent and form one type, represented by one of its pairs.
     Within every window of TYPE_WINDOW only the TYPES_PER_WINDOW types with
-    the largest X-ray weight are kept.
+    the largest X-ray weight and those with the largest neutron weight are kept.
 
     Args:
         structure (Structure): Structure as shown in the viewer.
@@ -183,12 +183,17 @@ def distance_types(structure, r_max):
     wn_sum = np.bincount(inverse, weights=wn)
     dk = np.round(d[first], 3)
 
-    # keep the strongest types of every window, then sort by distance
+    # keep the strongest types of every window, by X-ray and by neutron weight (with neutrons,
+    # pairs with H can be strong although their X-ray weight is small), then sort by distance
     window = np.floor(dk / TYPE_WINDOW).astype(np.int64)
-    order = np.lexsort((-w_sum, window))
-    starts = np.r_[0, np.nonzero(np.diff(window[order]))[0] + 1]
-    rank = np.arange(len(order)) - np.repeat(starts, np.diff(np.r_[starts, len(order)]))
-    keep = order[rank < TYPES_PER_WINDOW]
+
+    def strongest(weights):
+        order = np.lexsort((-weights, window))
+        starts = np.r_[0, np.nonzero(np.diff(window[order]))[0] + 1]
+        rank = np.arange(len(order)) - np.repeat(starts, np.diff(np.r_[starts, len(order)]))
+        return order[rank < TYPES_PER_WINDOW]
+
+    keep = np.union1d(strongest(w_sum), strongest(np.abs(wn_sum)))
     keep = keep[np.argsort(dk[keep], kind="stable")]
     rows = first[keep]
 

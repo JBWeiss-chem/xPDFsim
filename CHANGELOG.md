@@ -11,7 +11,7 @@
   the asymptotes of Table 4 (`-p`).
 - Neutron PDFs with coherent scattering lengths (`--radiation neutron`).
 - Highlighting of the atom pairs that contribute most to a region of the PDF in the 3D viewer, with their
-  share of the area under R(r).
+  share of the area under R(r); chemically nearly identical distances are grouped.
 - Ten example structures from the Crystallography Open Database.
 - Partial occupancies and mixed sites are shown in the viewer: the occupied slice of a sphere in the
   atom's colour, the unoccupied rest much lighter.

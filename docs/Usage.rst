@@ -102,7 +102,7 @@ The histograms are calculated up to *r max* with the *bin width* given here, for
 PDF options (box 3)
 ===================
 * **Convention**: the function shown, for X-rays (upper rows: :math:`G(r)`, :math:`g(r)`, :math:`D(r)`, :math:`G_\mathrm{K}(r)`, :math:`R(r)`, :math:`\rho(r)`, :math:`T(r)`, :math:`N(r)`) or neutrons (lower row: the functions most used with neutrons). The box below the buttons gives the definition, the unit and :math:`\langle b \rangle^2` of the structure. Switching between functions is animated and needs no recalculation.
-* **Broadening**: the standard deviation σ of the Gaussian broadening, and whether the broadened function or the raw histogram (filled bars) is shown.
+* **Broadening**: the standard deviation σ of the Gaussian broadening, and whether the broadened function or the histogram is shown. The histogram is the function without broadening at the resolution of the bin width: every bar is the average of the function over its bin. All functions are linear in the histogram of :math:`R(r)`, so this is defined for every convention; terms of the average density, such as :math:`-4\pi\rho_0 r` in :math:`G(r)`, appear as bars too. The bars of the total are light grey, those of the partials in their colours.
 * **r range**: the range of the plot.
 * **Curves**: the total and the element–element partials, and the asymptotes of the function (its low-r and high-r limits, Table 4 of Peterson *et al.*). Click a name to hide or show the curve. For X-rays, pairs with hydrogen are hidden at first, as H scatters X-rays weakly; for neutrons they are shown.
 * **Highlighting**: the settings for highlighting distances in the viewer (see below).
@@ -123,4 +123,6 @@ Left-click the plot to highlight the atom–atom distances that contribute most 
 
 Every highlighted distance is listed in the viewer with its share of the area under the pair density :math:`R(r)` in the region. :math:`R(r)` is never negative, so the shares of all distances add up to 100 % in every convention. With neutrons, pairs with a negative product of scattering lengths (e.g. with H, Ti or Mn) contribute negatively; the shares then refer to the area under :math:`|R(r)|` and such distances are marked *negative*. All symmetry-equivalent pairs of a distance are highlighted. The colours are colour-blind safe; the stronger a distance, the brighter its colour.
 
-The settings in box 3: the half-width of the *region*, the *minimum share* of a highlighted distance (default 10 %; at most eight distances are highlighted), the *rod thickness* and the visibility of the *other atoms* (far left: hidden). Partials that are hidden in the plot are not highlighted.
+Chemically nearly identical distances are grouped and highlighted together, e.g. the six Zn–N bonds of the two Zn sites of ZIF-4 (1.977–1.997 Å): a group holds the distances of one element pair that differ by at most the *group width* (default 0.03 Å) from the shortest one of the group. Symmetry-equivalent pairs always count as one distance.
+
+The settings in box 3: the half-width of the *region*, the *group width* (0: no grouping), the *minimum share* of a highlighted group (default 10 %; at most eight groups are highlighted), the *rod thickness* and the visibility of the *other atoms* (far left: hidden). Partials that are hidden in the plot are not highlighted.

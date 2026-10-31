@@ -90,13 +90,14 @@
  {
   "cod": "7237205",
   "file": "7237205.cif",
-  "name": "ZIF-4 (with DMF)",
-  "formula": "Zn(Im)₂·0.5 DMF",
+  "name": "ZIF-4",
+  "formula": "Zn(Im)₂",
   "category": "hybrid",
   "space_group": "P b c a",
   "temperature": "100",
   "reference": "Frentzel-Beyme et al., Journal of Materials Chemistry A 7, 985 (2019)",
-  "doi": "10.1039/C8TA08016J"
+  "doi": "10.1039/C8TA08016J",
+  "note": "DMF molecules in the pores removed"
  },
  {
   "cod": "2107954",

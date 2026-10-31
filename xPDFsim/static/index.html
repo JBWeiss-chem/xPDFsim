@@ -15,7 +15,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">xPDFsim <span>simulation of X-ray pair distribution functions from CIF files</span></div>
+  <div class="brand">xPDFsim <span>simulation of X-ray and neutron pair distribution functions from CIF files</span></div>
   <div class="hdr-actions">
     <label class="btn" title="Open one or more CIF files (or drop them anywhere on the window); every structure in them is added to the list in the Structure box"><input type="file" id="file" accept=".cif" multiple hidden>Open CIF…</label>
     <select id="examples" title="Classic structures from the Crystallography Open Database (COD)"><option value="">Examples…</option></select>
@@ -125,7 +125,7 @@
       </div>
       <div id="formula" class="formula"></div>
 
-      <h3>Broadening <i class="info" data-tip="Broadened function: every histogram bin is replaced by a Gaussian with standard deviation σ, a simple model of thermal motion and of the finite resolution of the experiment.&#10;Histogram: the unbroadened histogram (bin width from box 2), drawn as filled bars.&#10;Only one of the two is shown at a time. The CSV export contains the curves shown."></i></h3>
+      <h3>Broadening <i class="info" data-tip="Broadened function: every histogram bin is replaced by a Gaussian with standard deviation σ, a simple model of thermal motion and of the finite resolution of the experiment.&#10;Histogram: the function without broadening, at the resolution of the bin width (box 2): every bar is the average of the function over its bin. It is defined for every convention, as all of them are linear in the histogram of R(r); terms of the average density, such as −4πρ₀r in G(r), appear as bars too. The bars of the total are light grey, those of the partials in their colours.&#10;Only one of the two is shown at a time. The CSV export contains the curves shown."></i></h3>
       <div class="settings">
         <span class="sl">σ</span>
         <span class="sv"><input type="range" id="sigmaRange" min="0.005" max="0.4" step="0.005" value="0.1">
@@ -144,11 +144,13 @@
       <h3>Curves <i class="info" data-tip="Element–element partials (for X-rays, pairs with H are hidden at first; for neutrons, which H scatters strongly, they are shown), shown as their contributions to the total: the partial functions weighted with the Faber–Ziman weights W = cᵢcⱼbᵢbⱼ/⟨b⟩² (Peterson et al. 2021, eqs. 24, 26, 61 and 66), so they add up to the total. N(r) is not weighted by scattering lengths and is shown as total only. Click a name here or in the plot legend to hide or show it."></i>
         <span class="sep"></span><button class="small" id="curvesAll">all</button><button class="small" id="curvesNone">none</button></h3>
       <div id="curveList" class="muted">–</div>
-      <h3>Highlighting <i class="info" data-tip="Left-click the plot to highlight the atom–atom distances of the region around that r in the 3D viewer; the highlighting stays while you turn the structure. Click into the highlighted region or press Esc to remove it.&#10;Region: r ± the half-width below (for the histogram: the bins whose centres lie in it).&#10;Every distance is given with its share of the area under the X-ray weighted pair density R(r) in the region. R(r) is never negative, so the shares add up to 100 % in every convention. Distances below the minimum share are not highlighted (at most 8 are). Rod thickness: radius of the highlighted pairs. Other atoms: opacity of the rest of the structure while distances are highlighted (far left: hidden). Colours are colour-blind safe; the stronger a distance, the brighter its colour. With neutrons, contributions of pairs with a negative product of scattering lengths are negative: the shares then refer to the area under |R(r)| of all pairs and such distances are marked 'negative'."></i>
+      <h3>Highlighting <i class="info" data-tip="Left-click the plot to highlight the atom–atom distances of the region around that r in the 3D viewer; the highlighting stays while you turn the structure. Click into the highlighted region or press Esc to remove it.&#10;Region: r ± the half-width below (for the histogram: the bins whose centres lie in it).&#10;Every distance is given with its share of the area under the X-ray or neutron weighted pair density R(r) in the region. R(r) is never negative, so the shares add up to 100 % in every convention. Chemically nearly identical distances are grouped: the same element pair at distances that differ by at most the group width from the shortest one of the group (0: no grouping); symmetry-equivalent pairs always count as one distance. Groups below the minimum share are not highlighted (at most 8 are). Rod thickness: radius of the highlighted pairs. Other atoms: opacity of the rest of the structure while distances are highlighted (far left: hidden). Colours are colour-blind safe; the stronger a distance, the brighter its colour. With neutrons, contributions of pairs with a negative product of scattering lengths are negative: the shares then refer to the area under |R(r)| of all pairs and such distances are marked 'negative'."></i>
         <span class="sep"></span><button class="small" id="hlClear">clear</button></h3>
       <div class="settings">
         <span class="sl">region</span>
         <span class="sv">r ± <input type="number" id="hlWidth" value="0.1" min="0.005" max="5" step="0.05"> Å</span>
+        <span class="sl">group within</span>
+        <span class="sv"><input type="number" id="hlGroupW" value="0.03" min="0" max="1" step="0.01"> Å</span>
         <span class="sl">min. share</span>
         <span class="sv"><input type="number" id="hlMin" value="10" min="0" max="100" step="1"> % of the <var>R</var>(<var>r</var>) area</span>
         <span class="sl">rod thickness</span>

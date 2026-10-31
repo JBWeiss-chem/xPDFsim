@@ -104,7 +104,7 @@ def positive_float(value):
 
 def cli():
     """Command line interface function."""
-    parser = argparse.ArgumentParser(description="xPDFsim")
+    parser = argparse.ArgumentParser(description="xPDFsim: simulation of X-ray and neutron pair distribution functions (PDFs) from CIF files")
 
     # Specification of input file path
     parser.add_argument("input_file", help="CIF file")
@@ -118,7 +118,7 @@ def cli():
                         type=str,
                         default="g_r",
                         choices=list(CONVENTIONS),
-                        help="Type of xPDF to be simulated, as defined by Peterson et al., J. Appl. Cryst. 54, 317 (2021). Options: G_r, g_r, D_r, GK_r, R_r, rho_r, T_r, N_r. Default: g_r")
+                        help="Type of PDF to be simulated, as defined by Peterson et al., J. Appl. Cryst. 54, 317 (2021). Options: G_r, g_r, D_r, GK_r, R_r, rho_r, T_r, N_r. Default: g_r")
     
     parser.add_argument("--radiation",
                         default="xray",

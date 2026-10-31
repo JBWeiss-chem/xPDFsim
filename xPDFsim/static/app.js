@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const $ = (id) => document.getElementById(id);
 // opened structures; every entry keeps its CIF text, structure and calculated histograms
 const S = {
-  entries: [], active: null, conv: 'G', rad: 'xray', sigma: 0.1, showHist: false, hl: null, hlWidth: 0.1, hlMin: 0.1, hlRod: 0.2, hlDim: 0.38, dragMode: 'zoom', seen: new Set(),
+  entries: [], active: null, conv: 'G', rad: 'xray', sigma: 0.1, showHist: false, hl: null, hlWidth: 0.1, hlMin: 0.1, hlRod: 0.2, hlDim: 0.38, hlGroup: 0.03, dragMode: 'zoom', seen: new Set(),
   hiddenBy: { xray: new Set(), neutron: new Set() },
   showRef: false, xr: null, sc: [1, 1, 1],
 };
@@ -16,6 +16,9 @@ const PALETTE = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948
 const INK = '#1d2330';
 const OUT_STEP = 0.02;          // Å, grid of the broadened curves (as in the command line tool)
 const MIN_BAR_PX = 4;           // minimum width of a histogram bar on screen
+// histogram bars are translucent so that overlapping bars stay visible; the total, drawn behind
+// its partials, is lighter (light grey)
+const barOpacity = (c) => (c.total ? 0.22 : 0.55);
 
 // Real-space functions of Peterson, Olds, McDonnell & Page, J. Appl. Cryst. 54, 317 (2021), Table 4,
 // with the corrigendum by Peterson & Keen, J. Appl. Cryst. 54, 1542 (2021). All are derived from the
@@ -176,6 +179,31 @@ function renderEntries() {
   }));
 }
 
+// Hermann–Mauguin symbol as it is typeset: letters in italics, screw axes with a subscript
+// ('21' → 2₁), rotoinversions with an overbar ('-3' → 3̄); full monoclinic symbols are shortened
+// ('P 1 21/c 1' → P2₁/c). CIF symbols separate the parts by spaces; a compact symbol (e.g. 'Pbca',
+// 'P2_1/c', 'Fm-3m') is split after the lattice letter.
+function spaceGroupHtml(symbol) {
+  if (!symbol) return '–';
+  let tokens = symbol.trim().split(/\s+/);
+  if (tokens.length === 1) {
+    const m = symbol.trim().match(/^([A-Za-z])(.*)$/);
+    if (!m) return esc(symbol);
+    tokens = [m[1], ...(m[2].match(/-?\d(?:_\d)?(?:\/[a-z])?|[a-z](?:\/[a-z])?|:\S+/g) || [])];
+  }
+  const [lattice, ...rest] = tokens;
+  const origin = rest.filter((t) => t.startsWith(':'));          // origin choice, e.g. ':2'
+  let axes = rest.filter((t) => !t.startsWith(':'));
+  if (axes.length === 3 && axes.filter((t) => t === '1').length === 2) axes = axes.filter((t) => t !== '1');
+  const part = (p) => {
+    const m = p.match(/^(-?)(\d)_?(\d)?$/);
+    if (!m) return `<var>${esc(p)}</var>`;
+    return `${m[1] ? `<span class="bar">${m[2]}</span>` : m[2]}${m[3] ? `<sub>${m[3]}</sub>` : ''}`;
+  };
+  const axis = (t) => t.split('/').map(part).join('/');
+  return `<var>${esc(lattice)}</var>${axes.map(axis).join('')}${origin.length ? ` <span class="muted">${esc(origin.join(' '))}</span>` : ''}`;
+}
+
 function renderStructInfo() {
   const e = S.active;
   $('warnings').innerHTML = e ? e.warnings.map((w) => `<div class="warn">${esc(w)}</div>`).join('') : '';
@@ -185,13 +213,13 @@ function renderStructInfo() {
   $('structInfo').className = '';
   $('structInfo').innerHTML = `<div class="kv">
     <span>formula</span><span>${formula}</span>
-    <span>space group</span><span>${st.space_group ? esc(st.space_group) : '–'}</span>
+    <span>space group</span><span>${spaceGroupHtml(st.space_group)}</span>
     <span>a, b, c</span><span class="num">${st.abc.map((v) => f(v, 3)).join(', ')} Å</span>
     <span>α, β, γ</span><span class="num">${st.angles.map((v) => f(v, 2)).join(', ')}°</span>
     <span>volume</span><span class="num">${f(st.volume, 1)} Å³</span>
     <span>sites</span><span class="num">${st.atoms.length} in the cell${st.ordered ? '' : ', <b>disordered</b>'}</span>
     ${e.source ? `<span>source</span><span>COD ${esc(e.source.cod)}; ${esc(e.source.reference)}
-      (<a href="https://doi.org/${encodeURI(e.source.doi)}" target="_blank" rel="noopener">doi</a>)</span>` : ''}
+      (<a href="https://doi.org/${encodeURI(e.source.doi)}" target="_blank" rel="noopener">doi</a>)${e.source.note ? `; ${esc(e.source.note)}` : ''}</span>` : ''}
   </div>`;
 }
 
@@ -459,7 +487,7 @@ function drawChart(data) {
   if (S.showHist) {
     // the total behind its partials, all translucent so that overlapping bars stay visible
     [...data.hist].filter(visible).sort((a, b) => (b.total ? 1 : 0) - (a.total ? 1 : 0)).forEach((c) => {
-      svg += `<path d="${bars(data.hx, c.y)}" fill="${c.color}" fill-opacity="${c.total ? 0.22 : 0.55}" stroke="none" opacity="${opacity(c)}"/>`;
+      svg += `<path d="${bars(data.hx, c.y)}" fill="${c.color}" fill-opacity="${barOpacity(c)}" stroke="none" opacity="${opacity(c)}"/>`;
     });
   } else {
     partialsFirst(data.curves).forEach((c) => {
@@ -479,7 +507,10 @@ function drawChart(data) {
     items.forEach((c, k) => {
       const yy = ly + 4 + k * lh + lh / 2, op = visible(c) ? 1 : 0.35;
       svg += `<g class="lg" data-label="${esc(c.label)}" opacity="${op}"><rect x="${lx + 2}" y="${yy - lh / 2}" width="${lw - 4}" height="${lh}" fill="transparent"/>`;
-      svg += `<line x1="${lx + 8}" x2="${lx + 26}" y1="${yy}" y2="${yy}" stroke="${c.color}" stroke-width="${c.total ? 2.5 : 2}"/>`;
+      // histogram: a filled swatch like the bars (the total's bars are a light grey fill)
+      svg += S.showHist
+        ? `<rect x="${lx + 8}" y="${yy - 5}" width="18" height="10" rx="1.5" fill="${c.color}" fill-opacity="${barOpacity(c)}"/>`
+        : `<line x1="${lx + 8}" x2="${lx + 26}" y1="${yy}" y2="${yy}" stroke="${c.color}" stroke-width="${c.total ? 2.5 : 2}"/>`;
       svg += `<text x="${lx + 32}" y="${yy + 4}" fill="${INK}">${c.label === 'total' ? nameSvg(conv.name) : esc(c.label)}</text></g>`;
     });
   }
@@ -700,6 +731,11 @@ $('hlWidth').onchange = () => {
   const v = +$('hlWidth').value;
   if (v > 0) S.hlWidth = v; else $('hlWidth').value = S.hlWidth;
   redraw();
+  if (S.hl) updateHighlight();
+};
+$('hlGroupW').onchange = () => {
+  const v = +$('hlGroupW').value;
+  if (v >= 0 && v <= 1) S.hlGroup = v; else $('hlGroupW').value = S.hlGroup;
   if (S.hl) updateHighlight();
 };
 $('hlMin').onchange = () => {
@@ -1129,6 +1165,8 @@ $('savePng').onclick = () => {
 const HL_COLORS = ['#F0E442', '#56B4E9', '#E69F00', '#009E73', '#CC79A7', '#0072B2', '#D55E00', '#BBBBBB'];
 const MAX_HIGHLIGHTS = HL_COLORS.length;
 const HL_MUTE_TO = '#5b6170', HL_MAX_MUTE = 0.6;
+// a single distance or the range of a group
+const distanceText = (t) => (t.dMax - t.dMin < 5e-4 ? t.dMin.toFixed(3) : `${t.dMin.toFixed(3)}–${t.dMax.toFixed(3)}`);
 function highlightColor(rank, relative) {
   const mix = HL_MAX_MUTE * (1 - Math.min(1, Math.max(0, relative)));
   return `#${new THREE.Color(HL_COLORS[rank]).lerp(new THREE.Color(HL_MUTE_TO), mix).getHexString()}`;
@@ -1197,12 +1235,37 @@ function dominantDistances(a, b) {
     const pair = [e.st.atoms[D.i[k]].el, e.st.atoms[D.j[k]].el].sort().join('-');
     if (S.hidden.has(pair)) continue;     // partials hidden in the plot are not highlighted
     const share = norm * Math.abs(W[k]) * fractionIn(D.d[k], a, b) / total;
-    if (share > 0 && share >= S.hlMin) cand.push({ k, pair: pair.replace('-', '–'), d: D.d[k], share, negative: W[k] < 0 });
+    if (share > 1e-5) cand.push({ k, pair: pair.replace('-', '–'), d: D.d[k], share, negative: W[k] < 0 });
   }
-  cand.sort((p, q) => q.share - p.share);
-  const types = cand.slice(0, MAX_HIGHLIGHTS)
-    .map((c, rank) => ({ ...c, n: D.n[c.k], color: highlightColor(rank, c.share / cand[0].share) }));
-  return { types, others: Math.max(0, 1 - types.reduce((sum, t) => sum + t.share, 0)), more: cand.length - types.length };
+  // Chemically nearly identical distances form one group: the same element pair (and sign) at
+  // distances within S.hlGroup of the shortest one of the group. In sorted order this is one pass;
+  // the fixed width of a group (instead of chaining neighbours) keeps groups short also where
+  // distances are dense. Symmetry-equivalent pairs are already one type each (server).
+  const groups = [];
+  const byPair = new Map();
+  cand.forEach((c) => {
+    const key = `${c.pair}/${c.negative}`;
+    if (!byPair.has(key)) byPair.set(key, []);
+    byPair.get(key).push(c);
+  });
+  byPair.forEach((list) => {
+    list.sort((p, q) => p.d - q.d);
+    let g = null;
+    list.forEach((c) => {
+      if (!g || c.d - g.dMin > S.hlGroup + 1e-9) {
+        g = { ks: [], pair: c.pair, negative: c.negative, dMin: c.d, dMax: c.d, share: 0, n: 0 };
+        groups.push(g);
+      }
+      g.ks.push(c.k);
+      g.dMax = c.d;
+      g.share += c.share;
+      g.n += D.n[c.k];
+    });
+  });
+  const strong = groups.filter((g) => g.share >= S.hlMin).sort((p, q) => q.share - p.share);
+  const types = strong.slice(0, MAX_HIGHLIGHTS)
+    .map((g, rank) => ({ ...g, color: highlightColor(rank, g.share / strong[0].share) }));
+  return { types, others: Math.max(0, 1 - types.reduce((sum, t) => sum + t.share, 0)), more: strong.length - types.length };
 }
 // (re)evaluates the highlighted region, e.g. after a click or a change of σ or the options
 async function updateHighlight() {
@@ -1274,7 +1337,7 @@ function typePairs(e, k) {
 }
 // draws the pairs of the given distance types in all shown cells; info: region and remainder
 function highlightDistances(types, info) {
-  const key = S.active && info ? `${S.active.id}:${S.rad}:${types.map((t) => `${t.k}/${t.share.toFixed(4)}`).join(',')}:${info.a}:${info.b}` : '';
+  const key = S.active && info ? `${S.active.id}:${S.rad}:${types.map((t) => `${t.ks.join('+')}/${t.share.toFixed(4)}`).join(',')}:${info.a}:${info.b}` : '';
   if (key === hlKey) return;
   hlKey = key;
   if (hlGroup) {
@@ -1308,7 +1371,7 @@ function highlightDistances(types, info) {
   types.forEach((t) => {
     t.count = 0;
     for (const img of imgs) {
-      for (const [i, j, n] of typePairs(e, t.k)) {
+      for (const [i, j, n] of t.ks.flatMap((k) => typePairs(e, k))) {
         if (bonds.length >= MAX_HIGHLIGHT_PAIRS) { truncated = true; return; }
         const nj = vadd(img, n);
         const a = vadd(st.atoms[i].xyz, imgVec(img, L)), b = vadd(st.atoms[j].xyz, imgVec(nj, L));
@@ -1342,8 +1405,8 @@ function highlightDistances(types, info) {
   [bondMesh, atomMesh].forEach((m) => { m.computeBoundingSphere(); hlGroup.add(m); });
   root.add(hlGroup);
   $('hlLegend').innerHTML = head
-    + types.map((t) => `<div><i style="background:${t.color}"></i>${esc(t.pair)} <b>${t.d.toFixed(3)} Å</b>
-      ${pct(t.share)}${t.negative ? ' <span class="neg">negative</span>' : ''} <span>· ${t.n} pairs per cell</span></div>`).join('')
+    + types.map((t) => `<div><i style="background:${t.color}"></i>${esc(t.pair)} <b>${distanceText(t)} Å</b>
+      ${pct(t.share)}${t.negative ? ' <span class="neg">negative</span>' : ''} <span>· ${t.n} pairs per cell${t.ks.length > 1 ? `, ${t.ks.length} distances` : ''}</span></div>`).join('')
     + (truncated ? `<div><span>only the first ${MAX_HIGHLIGHT_PAIRS} pairs are drawn</span></div>` : '') + foot;
 }
 const _dummy = new THREE.Object3D();
@@ -1393,7 +1456,7 @@ const CATEGORIES = { inorganic: 'Inorganic', organic: 'Organic', hybrid: 'Hybrid
       group.label = title;
       catalog.filter((x) => x.category === key).forEach((x) => {
         const o = new Option(`${x.name} – ${x.formula}`, x.file);
-        o.title = `COD ${x.cod}: ${x.reference}${x.temperature ? `, ${x.temperature} K` : ''}`;
+        o.title = `COD ${x.cod}: ${x.reference}${x.temperature ? `, ${x.temperature} K` : ''}${x.note ? ` (${x.note})` : ''}`;
         group.append(o);
       });
       sel.append(group);
