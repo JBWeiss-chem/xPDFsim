@@ -1,20 +1,18 @@
 xPDFsim documentation
 =====================
 
-Welcome to the xPDFsim documentation. This code allows you to simply generate X-ray pair distribution functions (xPDFs) based on cif files.
+Welcome to the xPDFsim documentation. This code allows you to simply generate X-ray and neutron pair distribution functions (PDFs) based on cif files.
 
 ########
 Features
 ########
 
-* Stable parsing of cif files with  `pymatgens`_ cif parser
-* Simulation of  :math:`G(r)` ,  :math:`g(r)` , and  :math:`R(r)`  functions
-* Simulation of all element-element partial xPDFs
-* Interactive  `bokeh`_ graphs
-* Export of the simulated xPDFs to a csv file
-
-.. _pymatgens: https://pymatgen.org
-.. _bokeh: https://bokeh.org
+* Built-in CIF reader (symmetry expansion, partial occupancies, mixed sites, several structures per file)
+* Simulation of :math:`R(r)`, :math:`\rho(r)`, :math:`g(r)`, :math:`G_\mathrm{K}(r)`, :math:`G(r)`, :math:`D(r)`, :math:`T(r)` and :math:`N(r)`, defined as in Peterson *et al.* (2021)
+* X-ray and neutron PDFs, with all element-element partial PDFs
+* Graphical user interface in the browser with a 3D structure viewer and interactive graphs
+* Export of the simulated PDFs to a csv file
+* Only one dependency: numpy
 
 .. toctree::
    :maxdepth: 1

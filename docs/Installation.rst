@@ -2,28 +2,10 @@
 Installation
 ############
 
-Make sure to have some version of conda installed. It is recommended to create a new environment.
-
-.. code-block::
-
-    conda create -n xPDFsim
-
-And then activate it.
-
-.. code-block::
-
-    conda activate xPDFsim
-
-Then you can install it using pip.
+xPDFsim needs Python 3.8 or newer. Its only dependency is numpy; the 3D viewer (three.js) is included, so the graphical user interface also works offline. Install it with pip, ideally in a virtual environment:
 
 .. code-block::
 
     pip install xPDFsim
-
-If this does not work because pip is not installed, install it via conda first.
-
-.. code-block::
-
-    conda install pip
     
     

@@ -5,47 +5,110 @@ Introduction
 ***********************************
 Various pair distribution functions
 ***********************************
-There is a plethora of different pair distribution functions and various definitions. In this code, the definitions according to the book *Underneath the Bragg Peaks* by Takeshi Egami and Simon J.L. Billinge are used. :sup:`1` These are also the definitions used in the code *PDFgetX3*. :sup:`2`  Let us start with the following function:
+There is a plethora of different pair distribution functions and various definitions. In this code, the definitions, names and units of Peterson *et al.* :sup:`1` are used, including the corrections of Peterson and Keen. :sup:`2` These build on the relations established by Keen. :sup:`3` xPDFsim calculates X-ray and neutron PDFs. For neutrons, :math:`b_i` is the coherent scattering length of element :math:`i` (*Neutron Data Booklet*, Sears' values, as tabulated in pymatgen). For X-rays, it is approximated by the X-ray scattering length at :math:`Q = 0`, :math:`b_i = Z_i r_\mathrm{e}`, with the atomic number :math:`Z_i` and the classical electron radius :math:`r_\mathrm{e}`; the :math:`Q` dependence of the atomic form factors is neglected. The radiation is chosen with the option ``--radiation`` (``xray`` or ``neutron``). Some elements, e.g. H, Ti and Mn, have negative neutron scattering lengths, so neutron partials can be negative.
+
+All functions are calculated from the weighted radial distribution function (eq. 15 of Peterson *et al.*):
 
 .. math::
-  R_{ij}(r) = \frac{1}{N\mathrm{d}r}\ \frac{K_i K_j}{\langle K \rangle^2}\ n_{ij}(r)
-.. math::
-  R(r) = \displaystyle\sum_{i,j=1}^{n} R_{ij}(r)
-  
+  R(r) = \frac{1}{N} \sum_{\mu\nu} \frac{b_\mu b_\nu}{\langle b \rangle^2}\ \delta(r - r_{\mu\nu}),
+  \qquad \langle b \rangle = \sum_i c_i b_i
+
+where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance :math:`r_{\mu\nu}`, :math:`N` is the number of atoms in the unit cell and :math:`c_i` is the atomic fraction of element :math:`i`. In practice, the distances are sorted into histograms of width :math:`\mathrm{d}r` (option ``-b``), which are then broadened with Gaussians (option ``-s``).
+
 .. figure:: NaCl_R_r.png
    :scale: 20 %
    :align:  center
 
-   Computed G(r) function of NaCl.
-  
-Herein, :math:`n_{ij}(r)` is the number of atoms of type j between distances :math:`r` and :math:`r+\mathrm{d}r` from atoms of type i, :math:`N` is the number of atoms in the unit cell, :math:`K_i` and :math:`K_i` are the atomic numbers if atoms i and j, and :math:`\langle K \rangle` is the average atomic number of all atoms in the unit cell. While :math:`R(r)` is a very intuitive function, it is not commonly used because it oscillates around :math:`4\pi\rho r^2` (with the number density :math:`\rho`), making it unpractical for plotting. An alternative function is:
-  
-.. math::
-  g_{ij}(r) = \frac{R_{ij}(r)}{4\pi\rho r^2}
-.. math::
-  g(r) = \displaystyle\sum_{i,j=1}^{n} g_{ij}(r)
-  
+   Computed R(r) function of NaCl.
+
+:math:`R(r)` is very intuitive, but it grows as :math:`4\pi\rho_0 r^2` (with the average number density :math:`\rho_0`), which makes it impractical for plotting. The other functions follow from it (Table 5 and Appendix A of Peterson *et al.*):
+
+.. list-table::
+   :header-rows: 1
+
+   * - Option ``-p``
+     - Function
+     - Definition
+     - Low-r limit
+     - High-r limit
+     - Unit
+   * - ``G_r``
+     - reduced pair distribution function
+     - :math:`G(r) = 4\pi r [\rho(r) - \rho_0]`
+     - :math:`-4\pi\rho_0 r`
+     - :math:`0`
+     - atom Å\ :sup:`-2`
+   * - ``g_r``
+     - pair distribution function
+     - :math:`g(r) = \rho(r) / \rho_0`
+     - :math:`0`
+     - :math:`1`
+     - –
+   * - ``D_r``
+     - differential correlation function
+     - :math:`D(r) = \langle b \rangle^2 G(r)`
+     - :math:`-4\pi\rho_0 \langle b \rangle^2 r`
+     - :math:`0`
+     - barn atom Å\ :sup:`-2`
+   * - ``GK_r``
+     - total radial distribution function
+     - :math:`G_\mathrm{K}(r) = \langle b \rangle^2 [g(r) - 1]`
+     - :math:`-\langle b \rangle^2`
+     - :math:`0`
+     - barn
+   * - ``R_r``
+     - weighted radial distribution function
+     - :math:`R(r)`
+     - :math:`0`
+     - :math:`4\pi\rho_0 r^2`
+     - atom Å\ :sup:`-1`
+   * - ``rho_r``
+     - density function
+     - :math:`\rho(r) = R(r) / 4\pi r^2`
+     - :math:`0`
+     - :math:`\rho_0`
+     - atom Å\ :sup:`-3`
+   * - ``T_r``
+     - total correlation function
+     - :math:`T(r) = \langle b \rangle^2 R(r) / r`
+     - :math:`0`
+     - :math:`4\pi\rho_0 \langle b \rangle^2 r`
+     - barn atom Å\ :sup:`-2`
+   * - ``N_r``
+     - coordination number
+     - :math:`N(r) = \int_0^r \mathrm{RDF}(r')\,\mathrm{d}r'`
+     - :math:`0`
+     - :math:`\tfrac{4}{3}\pi\rho_0 r^3`
+     - atom
+
 .. figure:: NaCl_g_r.png
    :scale: 20 %
    :align:  center
 
    Computed g(r) function of NaCl.
-  
-:math:`g(r)` oscillates around 1 and is therefore much nicer to plot than  :math:`R(r)`. This is the default function used in xPDFsim. However, to obtain one of these functions from experimental data, one needs to make assumptions about the number density of the material. The function most commonly obtained from experimental data is:
-  
-.. math::
-  G(r) = \frac{R(r)}{r}-4\pi\rho r
-  
+
+Following Peterson *et al.*, :math:`g(r)` and :math:`G(r)` are the recommended functions: :math:`g(r)` is bounded by 0 and 1 and emphasises low-r features, while the oscillations of :math:`G(r)` have the same weight at all distances. :math:`g(r)` is the default function of xPDFsim.
+
 .. figure:: NaCl_G_r-2.png
    :scale: 20 %
    :align:  center
 
    Computed G(r) function of NaCl.
-  
-In contrast to the functions above, :math:`G(r)` cannot be expressed as a linear combination of the underlying element-element correlations. 
-  
+
+:math:`N(r)` is the average number of atoms within the distance :math:`r` of an atom. It is calculated from the unweighted radial distribution function :math:`\mathrm{RDF}(r) = \frac{1}{N} \sum_{\mu\nu} \delta(r - r_{\mu\nu})` (eq. 14) and is therefore not weighted by scattering lengths.
+
+Partial functions
+=================
+Every function except :math:`N(r)` is written out with its element-element partials. They are given as the contributions of the element pairs to the total, i.e. the partial functions multiplied by the Faber-Ziman weights (Appendix F of Peterson *et al.*)
+
+.. math::
+  W_{ij} = c_i c_j \frac{b_i b_j}{\langle b \rangle^2}, \qquad \sum_{i,j} W_{ij} = 1,
+
+so that the partials add up to the total, for example :math:`G(r) = \sum_{i,j} W_{ij} G_{ij}(r)` (eq. 66). The weights of the two orders of an unlike pair (e.g. Na-Cl and Cl-Na) are combined into one partial.
+
 *******
 Sources
 *******
-1.  Egami, T. & Billinge, S. J. L. *Underneath the Bragg Peaks: Structural Analysis of Complex Materials* (Pergamon, 2003).
-2. Juhás, P., Davis, T., Farrow, C. L. & Billinge, S. J. L. PDFgetX3: a rapid and highly automatable program for processing powder diffraction data into total scattering pair distribution functions. J. Appl. Crystallogr. 46, 560–566 (2013).
+1. Peterson, P. F., Olds, D., McDonnell, M. T. & Page, K. Illustrated formalisms for total scattering data: a guide for new practitioners. *J. Appl. Cryst.* **54**, 317–332 (2021).
+2. Peterson, P. F. & Keen, D. A. Illustrated formalisms for total scattering data: a guide for new practitioners. Corrigendum and addendum. *J. Appl. Cryst.* **54**, 1542–1545 (2021).
+3. Keen, D. A. A comparison of various commonly used correlation functions for describing total scattering. *J. Appl. Cryst.* **34**, 172–177 (2001).

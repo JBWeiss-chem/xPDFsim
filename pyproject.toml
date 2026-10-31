@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "xPDFsim"
 version = "0.0.3"
 license = "GPL-3.0-or-later"
+license-files = ["LICENSE", "xPDFsim/static/vendor/three/LICENSE"]
 description = "Simple simulation of X-ray pair distribution functions."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -21,18 +22,19 @@ classifiers = [
 ]
 
 dependencies = [
-    "numpy",
-    "scipy",
-    "pymatgen",
-    "pandas",
-    "bokeh"
+    "numpy"
     ]
 
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.setuptools.package-data]
+# the web front end of the GUI, including the bundled three.js
+xPDFsim = ["static/**/*"]
+
 [project.scripts]
 xPDFsim = "xPDFsim.main:cli"
+xPDFsim-gui = "xPDFsim.server:main"
 
 [project.urls]
 Repository = "https://github.com/JBWeiss-chem/xPDFsim"

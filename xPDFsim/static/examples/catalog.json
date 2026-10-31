@@ -1,0 +1,112 @@
+[
+ {
+  "cod": "1000041",
+  "file": "1000041.cif",
+  "name": "Sodium chloride (rock salt)",
+  "formula": "NaCl",
+  "category": "inorganic",
+  "space_group": "F m -3 m",
+  "temperature": null,
+  "reference": "Abrahams & Bernstein, Acta Crystallographica 18, 926 (1965)",
+  "doi": "10.1107/S0365110X65002244"
+ },
+ {
+  "cod": "9013321",
+  "file": "9013321.cif",
+  "name": "α-Quartz",
+  "formula": "SiO₂",
+  "category": "inorganic",
+  "space_group": "P 32 2 1",
+  "temperature": null,
+  "reference": "Antao et al., The Canadian Mineralogist 46, 1501 (2008)",
+  "doi": "10.3749/canmin.46.5.1501"
+ },
+ {
+  "cod": "9015662",
+  "file": "9015662.cif",
+  "name": "Rutile",
+  "formula": "TiO₂",
+  "category": "inorganic",
+  "space_group": "P 42/m n m",
+  "temperature": null,
+  "reference": "Howard et al., Acta Crystallographica, Section B 47, 462 (1991)",
+  "doi": "10.1107/S010876819100335X"
+ },
+ {
+  "cod": "9006864",
+  "file": "9006864.cif",
+  "name": "Strontium titanate (cubic perovskite)",
+  "formula": "SrTiO₃",
+  "category": "inorganic",
+  "space_group": "P m -3 m",
+  "temperature": null,
+  "reference": "Mitchell et al., Physics and Chemistry of Minerals 27, 583 (2000)",
+  "doi": "10.1007/s002690000103"
+ },
+ {
+  "cod": "1566501",
+  "file": "1566501.cif",
+  "name": "Urea",
+  "formula": "CH₄N₂O",
+  "category": "organic",
+  "space_group": "P -4 21 m",
+  "temperature": "123.15",
+  "reference": "Ruth et al., IUCrJ 9, 286 (2022)",
+  "doi": "10.1107/S2052252522001385"
+ },
+ {
+  "cod": "2311090",
+  "file": "2311090.cif",
+  "name": "Naphthalene",
+  "formula": "C₁₀H₈",
+  "category": "organic",
+  "space_group": "P 1 21/c 1",
+  "temperature": "80",
+  "reference": "Hoser & Madsen, Acta Crystallographica Section A 73, 102 (2017)",
+  "doi": "10.1107/S2053273316018994"
+ },
+ {
+  "cod": "4002052",
+  "file": "4002052.cif",
+  "name": "HKUST-1",
+  "formula": "Cu₃(BTC)₂",
+  "category": "hybrid",
+  "space_group": "F m -3 m",
+  "temperature": "273",
+  "reference": "Peterson et al., Chemistry of Materials 26, 4712 (2014)",
+  "doi": "10.1021/cm501138g"
+ },
+ {
+  "cod": "1516295",
+  "file": "1516295.cif",
+  "name": "MOF-5",
+  "formula": "Zn₄O(BDC)₃",
+  "category": "hybrid",
+  "space_group": "F m -3 m",
+  "temperature": "300",
+  "reference": "Lock et al., The Journal of Physical Chemistry C 114, 16181 (2010)",
+  "doi": "10.1021/jp103212z"
+ },
+ {
+  "cod": "7111973",
+  "file": "7111973.cif",
+  "name": "ZIF-8",
+  "formula": "Zn(mIm)₂",
+  "category": "hybrid",
+  "space_group": "I -4 3 m",
+  "temperature": "298",
+  "reference": "Shekhah et al., Chemical Communications 50, 2089 (2014)",
+  "doi": "10.1039/c3cc47495j"
+ },
+ {
+  "cod": "2107954",
+  "file": "2107954.cif",
+  "name": "Methylammonium lead iodide (MAPbI₃)",
+  "formula": "CH₃NH₃PbI₃",
+  "category": "hybrid",
+  "space_group": "I 4 2 2",
+  "temperature": "293",
+  "reference": "Arakcheeva et al., Acta Crystallographica Section B 72, 716 (2016)",
+  "doi": "10.1107/S2052520616010428"
+ }
+]

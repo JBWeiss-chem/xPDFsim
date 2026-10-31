@@ -1,201 +1,264 @@
+"""X-ray and neutron pair distribution functions.
+
+The definitions follow P. F. Peterson, D. Olds, M. T. McDonnell & K. Page,
+J. Appl. Cryst. 54, 317-332 (2021) and the corrigendum by P. F. Peterson &
+D. A. Keen, J. Appl. Cryst. 54, 1542-1545 (2021). For neutrons, b_i is the
+coherent scattering length of the element (Neutron Data Booklet, Sears'
+values). For X-rays, it is approximated by the X-ray scattering length at
+Q = 0, b_i = Z_i r_e, i.e. the Q dependence of the atomic form factors is
+neglected.
+
+The functions are passed around as tables: dictionaries of numpy arrays with
+the key "radii", one key per element pair (the partials) and "total".
+"""
+
+import itertools
 import numpy as np
-import pandas as pd
-from pymatgen.core import Element
-import itertools as iter
-from .utils import *
+
+from .elements import ATOMIC_NUMBERS, NEUTRON_B
+
+R_E = 2.8179403262      # classical electron radius in fm
+FM2_PER_BARN = 100.0
+RADIATIONS = ("xray", "neutron")
+
+# Real-space functions of Table 4 of Peterson et al. (2021) with their units,
+# the most commonly used first
+CONVENTIONS = {
+    "G_r": "atom Å⁻²",           # reduced pair distribution function, eq. (19)
+    "g_r": "",                   # pair distribution function, eq. (22)
+    "D_r": "barn atom Å⁻²",      # differential correlation function, eq. (28)
+    "GK_r": "barn",              # total radial distribution function, eq. (26)
+    "R_r": "atom Å⁻¹",           # weighted radial distribution function, eq. (15)
+    "rho_r": "atom Å⁻³",         # density function, eq. (16)
+    "T_r": "barn atom Å⁻²",      # total correlation function, eq. (29)
+    "N_r": "atom",               # coordination number, eq. (31)
+}
 
 
-def gen_R_r(structure, r_max, dr):
-    """Takes a pymatgen Structure, calculates neighbor lists, transforms them 
-    into a histogram, and finally transforms them into X-ray pair distribution 
-    functions.
+def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray"):
+    """Takes a Structure, calculates neighbor lists, transforms them
+    into a histogram, and finally transforms them into the weighted radial
+    distribution function R(r) [Peterson et al. (2021), eq. (15)].
 
     Args:
-        structure (pymatgen Stcucture): Structure of which the PDF shall be 
-        calculated.
+        structure (Structure): Structure of which the PDF shall be calculated.
         r_max (float or int): Maximum r to which the PDF shall be calculated.
         dr (float or int): Bin width of the histogram.
+        verbose (Boolean): If True, progress messages are printed.
+        radiation (string): "xray" or "neutron", sets the scattering lengths.
 
     Returns:
-        dataframe: Histogramms of the R(r) functions.
+        dictionary: Table of the R(r) histograms. The partials are the
+        weighted contributions of the element pairs, which add up to the total.
         float: Number density of the material.
     """
-    # Setup for later
-    total_atoms, c_is = get_fractions(structure.formula)
-    rho = total_atoms / structure.lattice.volume
+    # composition with partial occupancies counted fractionally
+    elements = list(structure.composition())
+    total_atoms = structure.num_atoms()
+    rho = total_atoms / structure.volume
+    weights, _ = pair_weights(structure, radiation)
 
-    # Generate element pairs for partial PDFs
-    element_list = [element.symbol for element in structure.elements]
-    element_pairs_raw = list(iter.combinations_with_replacement(element_list, 2))
-    sorted_elements = [sorted(tup) for tup in element_pairs_raw]
-    element_pairs = [f'{el[0]}-{el[1]}' for el in sorted_elements]
-    
-    # Calculate X-ray normalisation factor
-    K_is = [Element(atom_type).Z for atom_type in element_list]
-    norm_x_ray = 0
-    for i in range(len(c_is)):
-        norm_x_ray += c_is[i] * K_is[i]
-    norm_x_ray = norm_x_ray**2 
+    # Histogram bins; calculated up to r_max+1 so that broadening near r_max
+    # is not truncated
+    n_bins = int(round((r_max + 1) / dr))
+    radii = (np.arange(n_bins) + 0.5) * dr
 
-    radii = np.arange(dr, r_max+1, dr) 
-
-    # Check if structure is ordered to safe some computing time
-    if structure.is_ordered:
-        print("Ordered structure detected.\n")
+    if verbose:
+        if structure.is_ordered:
+            print("Ordered structure detected.\n")
+        else:
+            print("Disordered structure detected.\n")
         print("Calculating PDF...\n")
-        rdf_sharp = gen_sharp_rdf(structure, element_pairs, r_max)
-        hist_dict = gen_histogram(rdf_sharp, radii)
 
-    elif structure.is_ordered == False:
-        print("Disordered structure detected.\n")
-        print("Calculating PDF...\n")
-        rdf_sharp, rdf_sharp_weights = gen_sharp_rdf_dis(structure, 
-                                                         element_pairs, r_max)
-        hist_dict = gen_histogram_dis(rdf_sharp, rdf_sharp_weights, radii)
+    occupancies = get_occupancies(structure, elements)
+    centers, neighbors, _, distances = structure.neighbor_list(r_max + 1)
 
-    hist_dict['radii'] = radii[:-1]
-    
-    # Calculate R(r) from distance histograms
-    R_r_df = gen_R_r_df(hist_dict, norm_x_ray, total_atoms, dr)
-    
-    return R_r_df, rho
-    
+    # Histogram distances of every element pair, weighted by the occupancies
+    # of both sites (1 for ordered structures); the bins are uniform, so the
+    # bin of every distance is computed once and counted with bincount
+    bins = np.floor(distances / dr).astype(np.int64)
+    inside = bins < n_bins
+    bins, centers, neighbors = bins[inside], centers[inside], neighbors[inside]
+    table = {"radii": radii}
+    for i, j in itertools.combinations_with_replacement(range(len(elements)), 2):
+        occupancy_weights = occupancies[centers, i] * occupancies[neighbors, j]
+        if i != j:
+            occupancy_weights += occupancies[centers, j] * occupancies[neighbors, i]
+        hist = np.bincount(bins, weights=occupancy_weights, minlength=n_bins)
 
-def gen_sharp_rdf(structure, element_pairs, r_max):
-    """Generates neighbor list and sorts distances by element pairs.
+        label = pair_label(elements[i], elements[j])
+        table[label] = weights[label]["bb"] / (total_atoms * dr) * hist
+
+    table["total"] = sum(table[label] for label in partial_labels(table))
+    return table, rho
+
+
+def partial_labels(table):
+    """The element pairs of a table."""
+    return [label for label in table if label not in ("radii", "total")]
+
+
+def pair_label(element_1, element_2):
+    """Label of an element pair, e.g. 'Cl-Na'."""
+    return "-".join(sorted([element_1, element_2]))
+
+
+def scattering_length(element, radiation):
+    """Scattering length b of an element in fm.
 
     Args:
-        structure (pymatgen Stcucture): Structure of which the PDF shall be 
-        calculated.
-        element_pairs (list): Element-element pairs of which the PDF shall be 
-        calculated.
-        r_max (float or int): Maximum r to which the PDF shall be calculated.
+        element (string): Element symbol.
+        radiation (string): "xray" (b = Z r_e) or "neutron" (coherent
+        scattering length).
 
     Returns:
-        dictionary: Contains all Element-Element PDFs.
+        float: Scattering length in fm.
     """
-    all_neighbors = structure.get_all_neighbors(r=r_max+1)
-    rdf_sharp = {}
-    for element_pair in element_pairs:
-        rdf_sharp[element_pair] = []
-    for id, site in enumerate(structure.sites):
-        element_1 = str(site.specie)
-        neighbors = all_neighbors[id]
-        for neighbor in neighbors:
-            element_2 = str(neighbor.specie)
-            pair_list = sorted([element_1, element_2])
-            pair_label = f'{pair_list[0]}-{pair_list[1]}'
-            dist = np.linalg.norm(site.coords - neighbor.coords)
-            rdf_sharp[pair_label].append(dist)
-    return rdf_sharp
+    if radiation == "xray":
+        return ATOMIC_NUMBERS[element] * R_E
+    if radiation == "neutron":
+        try:
+            return NEUTRON_B[element]
+        except KeyError:
+            raise ValueError(f"No neutron scattering length is tabulated for {element}.")
+    raise ValueError(f"Unknown radiation {radiation}")
 
 
-def gen_sharp_rdf_dis(structure, element_pairs, r_max):
-    """Generates neighbor list and sorts distances by element pairs. For d
-    isordered materials.
+def pair_weights(structure, radiation="xray"):
+    """Weights of all element pairs for X-rays or neutrons.
 
     Args:
-        structure (pymatgen Stcucture): Structure of which the PDF shall be 
-        calculated.
-        element_pairs (list): Element-element pairs of which the PDF shall be 
-        calculated.
-        r_max (float or int): Maximum r to which the PDF shall be calculated.
+        structure (Structure): Structure of which the PDF shall be calculated.
+        radiation (string): "xray" or "neutron".
 
     Returns:
-        dictionary: Contains all Element-Element PDFs.
-    """    
-    all_neighbors = structure.get_all_neighbors(r=r_max+1)
-    rdf_sharp = {}
-    rdf_sharp_weights = {}
-    for element_pair in element_pairs:
-        rdf_sharp[element_pair] = []
-        rdf_sharp_weights[element_pair] = []
-    for id, site in enumerate(structure.sites):
-        species_1 = site.species_string.split(':')
-        element_1 = species_1[0]
-        if len(species_1) == 1:
-            occu_1 = 1
-        elif len(species_1) == 2:
-            occu_1 = float(species_1[1])
-        neighbors = all_neighbors[id]
-        for neighbor in neighbors:
-            species_2 = neighbor.species_string.split(':')
-            element_2 = species_2[0]
-            if len(species_2) == 1:
-                occu_2 = 1
-            elif len(species_2) == 2:
-                occu_2 = float(species_2[1])
-            pair_list = sorted([element_1, element_2])
-            pair_label = f'{pair_list[0]}-{pair_list[1]}'
-            dist = np.linalg.norm(site.coords - neighbor.coords)
-            weight = occu_1 * occu_2
-            rdf_sharp[pair_label].append(dist)
-            rdf_sharp_weights[pair_label].append(weight)
-    return rdf_sharp, rdf_sharp_weights
+        dictionary: For every pair label, "bb" = b_i b_j / <b_coh>^2 (the factor
+        in eq. 15) and "W" = the Faber-Ziman weight c_i c_j b_i b_j / <b_coh>^2
+        of eq. (61), summed over both orders of unlike pairs, so that the
+        weights of all pairs add up to 1. With neutrons, elements with a
+        negative scattering length (e.g. H, Ti, Mn) give negative weights.
+        float: <b_coh>^2 in barn (eq. 57).
 
-
-def gen_histogram(rdf_dict, radii):
-    """Turns distance lists into histograms.
-
-    Args:
-        rdf_dict (dictionary): Contains lists of exact distances.
-        radii (numpy array): Radii corresponding to the to-be-generated 
-        histogram.
-
-    Returns:
-        dictionary: Contains arrays of the generated histograms.
+    Raises:
+        ValueError: If a scattering length is missing or <b_coh> is zero.
     """
-    hist_dict = {}
-    for pair in rdf_dict:
-        hist_dict[pair] = np.histogram(rdf_dict[pair], bins=radii)[0]
-    return hist_dict
+    composition = structure.composition()
+    total = sum(composition.values())
+    fraction = {el: amount / total for el, amount in composition.items()}
+    elements = list(composition)
+    b = {el: scattering_length(el, radiation) for el in elements}
+    mean_b = sum(fraction[el] * b[el] for el in elements)
+    if abs(mean_b) < 1e-6:
+        raise ValueError("The average scattering length is zero, so the normalised functions are not defined.")
+    weights = {}
+    for el_1, el_2 in itertools.combinations_with_replacement(elements, 2):
+        bb = b[el_1] * b[el_2] / mean_b**2
+        c_1, c_2 = fraction[el_1], fraction[el_2]
+        multiplicity = 1 if el_1 == el_2 else 2
+        weights[pair_label(el_1, el_2)] = {"bb": bb, "W": multiplicity * c_1 * c_2 * bb}
+    mean_b2 = mean_b**2 / FM2_PER_BARN
+    return weights, mean_b2
 
 
-def gen_histogram_dis(rdf_dict, rdf_dict_weights, radii):
-    """Turns distance lists into histograms. For disordered materials.
-
-    Args:
-        rdf_dict (dictionary): Contains lists of exact distances.
-        rdf_dict_weights (dictionary): Contains weights for each distance 
-        calculated from occupancies.
-        radii (numpy array): Radii corresponding to the to-be-generated 
-        histogram.
-
-    Returns:
-        dictionary: Contains arrays of the generated histograms.
-    """
-
-    hist_dict = {}
-    for pair in rdf_dict:
-        hist_dict[pair] = np.histogram(rdf_dict[pair], bins=radii, 
-                                       weights=rdf_dict_weights[pair])[0]
-    return hist_dict
-
-
-def gen_R_r_df(hist_dict, norm_x_ray, total_atoms, dr):
-    """Adds X-ray contributions to histograms of distances.
-
-    Args:
-        hist_dict (dictionary): Contains histograms of distances.
-        norm_x_ray (float): Square of average atomic number in the structure.
-        total_atoms (int): Total atoms in the unit cell.
-        dr (float or int): Bin width of the histogram.
+def linear_terms(convention, r, rho, mean_b2):
+    """Every function X(r) of Table 4 except N(r) is linear in R(r):
+    X(r) = a(r) R(r) + c(r) W, with W = 1 for the total and the Faber-Ziman
+    weight for the partials (Appendix A1 and F of Peterson et al., 2021).
 
     Returns:
-        dataframe: Contains R(r) functions.
+        numpy array: a(r).
+        numpy array: c(r).
     """
-    R_r_dict = {}
-    for pair in hist_dict:
-        if pair == 'radii':
-            break
-        element_1 = pair.split('-')[0]
-        element_2 = pair.split('-')[1]
-        K_1 = Element(element_1).Z
-        K_2 = Element(element_2).Z
-        R_r = K_1*K_2 / (norm_x_ray*total_atoms*dr) * hist_dict[pair]
-        R_r_dict[pair] = R_r
+    zero = np.zeros_like(r)
+    if convention == "R_r":
+        return np.ones_like(r), zero
+    if convention == "rho_r":
+        return 1 / (4 * np.pi * r**2), zero
+    if convention == "g_r":
+        return 1 / (4 * np.pi * rho * r**2), zero
+    if convention == "GK_r":
+        return mean_b2 / (4 * np.pi * rho * r**2), zero - mean_b2
+    if convention == "G_r":
+        return 1 / r, -4 * np.pi * rho * r
+    if convention == "D_r":
+        return mean_b2 / r, -4 * np.pi * rho * mean_b2 * r
+    if convention == "T_r":
+        return mean_b2 / r, zero
+    raise ValueError(f"Unknown convention {convention}")
 
-    R_r_dict['radii'] = hist_dict['radii']
-    df = pd.DataFrame(R_r_dict).round(4)
-    df['total'] = df.drop(columns=['radii']).sum(axis=1)
-    return df
+
+def convert_R_r(table, rho, convention, weights, mean_b2):
+    """Converts R(r) histograms into another real-space function.
+
+    Args:
+        table (dictionary): Table generated by gen_R_r().
+        rho (float): Number density of the material.
+        convention (string): One of CONVENTIONS.
+        weights (dictionary): Pair weights generated by pair_weights().
+        mean_b2 (float): <b_coh>^2 in barn generated by pair_weights().
+
+    Returns:
+        dictionary: Table of the converted functions. N(r) is given as total
+        only, as it is not weighted by the scattering lengths.
+    """
+    radii = table["radii"]
+    labels = partial_labels(table)
+    out = {"radii": radii}
+
+    if convention == "N_r":
+        # Unweighted RDF(r) of eq. (14), integrated up to the bin centres
+        dr = radii[1] - radii[0]
+        rdf = sum(table[label] / weights[label]["bb"] for label in labels)
+        out["total"] = (np.cumsum(rdf) - rdf / 2) * dr
+        return out
+
+    a, c = linear_terms(convention, radii, rho, mean_b2)
+    for label in labels:
+        out[label] = a * table[label] + c * weights[label]["W"]
+    out["total"] = a * table["total"] + c
+    return out
+
+
+def write_csv(table, filename):
+    """Writes a table as a CSV file: radii, partials, total."""
+    labels = ["radii"] + [label for label in table if label != "radii"]
+    data = np.column_stack([table[label] for label in labels])
+    np.savetxt(filename, data, delimiter=",", header=",".join(labels), comments="", fmt="%.10g")
+
+
+def asymptotes(convention, r, rho, mean_b2):
+    """Low-r and high-r limits of Table 4 of Peterson et al. (2021).
+
+    Returns:
+        list: The limits as arrays over r.
+    """
+    zero = np.zeros_like(r)
+    return {
+        "R_r": [zero, 4 * np.pi * rho * r**2],
+        "rho_r": [zero, zero + rho],
+        "g_r": [zero, zero + 1],
+        "GK_r": [zero - mean_b2, zero],
+        "G_r": [-4 * np.pi * rho * r, zero],
+        "D_r": [-4 * np.pi * rho * mean_b2 * r, zero],
+        "T_r": [zero, 4 * np.pi * rho * mean_b2 * r],
+        "N_r": [zero, 4 / 3 * np.pi * rho * r**3],
+    }[convention]
+
+
+def get_occupancies(structure, elements):
+    """Builds a matrix containing the occupancy of every element on every site.
+
+    Args:
+        structure (Structure): Structure of which the PDF shall be calculated.
+        elements (list): Element symbols present in the structure.
+
+    Returns:
+        numpy array: Occupancies with shape (number of sites, number of
+        elements).
+    """
+    element_index = {el: k for k, el in enumerate(elements)}
+    occupancies = np.zeros((len(structure), len(elements)))
+    for site_index, species in enumerate(structure.species):
+        for el, occupancy in species.items():
+            occupancies[site_index, element_index[el]] += occupancy
+    return occupancies

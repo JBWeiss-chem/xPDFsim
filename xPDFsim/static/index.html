@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xPDFsim</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+    "three": "./vendor/three/three.module.min.js",
+    "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <div class="brand">xPDFsim <span>simulation of X-ray pair distribution functions from CIF files</span></div>
+  <div class="hdr-actions">
+    <label class="btn" title="Open one or more CIF files (or drop them anywhere on the window); every structure in them is added to the list in the Structure box"><input type="file" id="file" accept=".cif" multiple hidden>Open CIF…</label>
+    <select id="examples" title="Classic structures from the Crystallography Open Database (COD)"><option value="">Examples…</option></select>
+    <a class="gh" href="https://github.com/JBWeiss-chem/xPDFsim" target="_blank" rel="noopener"
+       title="Source code on GitHub" aria-label="Source code on GitHub">
+      <svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+    </a>
+  </div>
+</header>
+
+<main>
+  <!-- ======================= left: structure + calculation -->
+  <aside id="left">
+    <section class="card">
+      <h2><span class="num">1</span>Structure <i class="info" data-tip="Open CIF files with the button at the top right or drop them anywhere on the window. Every structure of every file (a CIF can hold several data blocks) gets a box below: click it to switch. Each keeps its own calculated PDF.&#10;Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds. Partly occupied sites: the coloured part of the sphere (from the bottom) is the occupancy, e.g. half of the sphere for 0.5; on mixed sites, the second element follows as a band in its own colour; the empty rest is drawn see-through."></i></h2>
+      <div id="structList" hidden></div>
+      <div id="structInfo" class="muted">Load a CIF file to start.</div>
+      <div id="warnings"></div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">2</span>Calculation <i class="info" data-tip="The distances between all atom pairs up to r max + 1 Å are sorted into histograms of width 'bin width', one per element pair, and weighted with bᵢbⱼ/⟨b⟩², which gives the weighted radial distribution function R(r) of Peterson et al. (2021), eq. 15 (X-ray scattering lengths b = Z·rₑ). All functions are normalised per atom, so the result does not depend on the cell setting in the CIF. Partly occupied sites contribute with the product of both occupancies.&#10;Only these two settings need a recalculation; everything in box 3 is applied instantly."></i></h2>
+      <div class="settings">
+        <span class="sl">r max</span>
+        <span class="sv"><input type="number" id="rMax" value="20" min="1" max="100" step="1"> Å</span>
+        <span class="sl">bin width <i class="info" data-tip="Width of the histogram bins. Rarely worth changing; it should be clearly smaller than the broadening σ."></i></span>
+        <span class="sv"><input type="number" id="binWidth" value="0.01" min="0.001" max="0.1" step="0.005"> Å</span>
+      </div>
+      <button id="calc" class="primary" disabled>Calculate PDF</button>
+      <div id="progress" hidden><div></div></div>
+      <div id="calcInfo" class="hint"></div>
+    </section>
+  </aside>
+
+  <!-- ======================= centre: viewer + PDF -->
+  <section id="center">
+    <section id="viewerWrap">
+      <div id="viewer"></div>
+      <div id="toolbar">
+        <label class="sc">Cells <input type="number" id="scA" min="1" max="12" value="1">×<input type="number" id="scB" min="1" max="12" value="1">×<input type="number" id="scC" min="1" max="12" value="1">
+          <button class="small" id="scCube" type="button" title="repeat counts that give a roughly cubic box">≈ cube</button>
+          <button class="small" id="scRmax" type="button" title="repeat counts that make the box about as thick as r max in every direction, so that all distances of the PDF fit into it">≈ r max</button>
+          <span id="scInfo" class="muted"></span>
+          <i class="info" data-tip="Number of unit cells shown along a, b and c (1–12 each). To keep the viewer responsive, at most 40 000 atoms are drawn; larger requests are refused. '≈ cube' picks repeat counts that give a roughly cubic box, useful for needle- or plate-shaped cells. '≈ r max' makes the box about as thick as r max of the PDF in every direction, so that all distances of the plot fit into it. Each structure keeps its own setting; new ones show one cell."></i></label>
+        <label><input type="checkbox" id="showH" checked> H atoms</label>
+        <label><input type="checkbox" id="showBonds" checked> bonds</label>
+        <label title="draw the bonded atoms just outside the cells, so that every bond ends at an atom"><input type="checkbox" id="boundaryAtoms" checked> boundary atoms</label>
+        <label><input type="checkbox" id="showCell" checked> unit cell</label>
+        <label><input type="checkbox" id="whiteBg"> white</label>
+        <span class="sep"></span>
+        <span class="views" title="view along a, b or c">
+          <button class="small" data-view="a">a</button>
+          <button class="small" data-view="b">b</button>
+          <button class="small" data-view="c">c</button>
+        </span>
+        <button class="small" id="savePng">PNG</button>
+      </div>
+      <div id="legend"></div>
+      <div id="hlLegend" hidden></div>
+      <div id="tooltip" hidden></div>
+      <div id="dropHint" hidden>Drop CIF files to open them</div>
+    </section>
+
+    <div id="splitter" title="drag to resize"></div>
+
+    <section id="pdfWrap">
+      <h2><span class="num">4</span><span id="pdfTitle">Pair distribution function</span>
+        <i class="info" data-tip="Drag across the plot to zoom into an r range (zoom mode, the default) or to move the visible range (pan mode); the mouse wheel zooms around the cursor in both modes, a double-click shows the full range. Hover to read off the values of all curves. Left-click to highlight the atom–atom distances of the shaded region in the 3D viewer (options in box 3); click into the highlighted (orange) region or press Esc to remove it. Click a legend entry to hide or show the curve."></i>
+        <span class="sep"></span>
+        <span class="modes" role="group" aria-label="Dragging across the plot">
+          <button class="small on" id="modeZoom" title="drag across the plot to zoom into an r range">zoom</button><button class="small" id="modePan" title="drag the plot to move the visible r range">pan</button>
+        </span>
+        <button class="small" id="resetZoom" title="show the full r range">full range</button>
+        <button class="small" id="exportCsv" title="the curves shown (full r range) as a CSV file, in the format of the command line tool">CSV</button>
+        <button class="small" id="exportSvg">SVG</button>
+        <button class="small" id="exportPng">PNG</button>
+      </h2>
+      <div id="chart"><p class="muted empty">The PDF of the loaded structure appears here.</p></div>
+      <div id="readout" hidden></div>
+    </section>
+  </section>
+
+  <!-- ======================= right: PDF options -->
+  <aside id="right">
+    <section class="card">
+      <h2><span class="num">3</span>PDF options <i class="info" data-tip="All options in this box are applied to the calculated histograms instantly, without recalculating them."></i></h2>
+
+      <h3>Convention <i class="info" data-tip="Definitions and units of Peterson, Olds, McDonnell &amp; Page, J. Appl. Cryst. 54, 317 (2021), Table 4, with the corrections of Peterson &amp; Keen, J. Appl. Cryst. 54, 1542 (2021). All functions are derived from the same histograms. The X-ray scattering length of an atom is approximated by its value at Q = 0, b = Z·rₑ (the Q dependence of the form factors is neglected); ⟨b⟩² = (Σ cᵢbᵢ)² is given in barn; ρ₀ is the average number density.&#10;G(r) = 4πr[ρ(r) − ρ₀]: reduced pair distribution function (PDFgui), −4πρ₀r at low r, uniform weighting at all r.&#10;g(r) = ρ(r)/ρ₀: pair distribution function, 0 at low r and 1 at high r.&#10;D(r) = ⟨b⟩² G(r): differential correlation function.&#10;G_K(r) = ⟨b⟩²[g(r) − 1]: total radial distribution function (Keen 2001), −⟨b⟩² at low r.&#10;R(r): weighted radial distribution function, from which all others are derived.&#10;ρ(r) = R(r)/4πr²: density function.&#10;T(r) = ⟨b⟩² R(r)/r: total correlation function, symmetric peaks.&#10;N(r): running coordination number, the average number of atoms within r of an atom (not weighted by scattering lengths).&#10;The paper recommends G(r) and g(r).&#10;Neutron: the same functions with the coherent neutron scattering lengths (Neutron Data Booklet, Sears' values) instead of b = Z·rₑ. Some elements (e.g. H, Ti, Mn) have negative scattering lengths, so neutron partials and ⟨b⟩ can be negative or small. The neutron row has the functions most used with neutrons; R(r), ρ(r) and N(r) are available from the command line."></i></h3>
+      <div class="radlabel">X-ray</div>
+      <div class="seg" id="conv">
+        <button data-conv="G" data-rad="xray">G(r)</button>
+        <button data-conv="g" data-rad="xray">g(r)</button>
+        <button data-conv="D" data-rad="xray">D(r)</button>
+        <button data-conv="GK" data-rad="xray">G<sub>K</sub>(r)</button>
+        <button data-conv="R" data-rad="xray">R(r)</button>
+        <button data-conv="rho" data-rad="xray">ρ(r)</button>
+        <button data-conv="T" data-rad="xray">T(r)</button>
+        <button data-conv="N" data-rad="xray">N(r)</button>
+      </div>
+      <div class="radlabel">neutron</div>
+      <div class="seg seg5" id="convN">
+        <button data-conv="G" data-rad="neutron">G(r)</button>
+        <button data-conv="g" data-rad="neutron">g(r)</button>
+        <button data-conv="D" data-rad="neutron">D(r)</button>
+        <button data-conv="GK" data-rad="neutron">G<sub>K</sub>(r)</button>
+        <button data-conv="T" data-rad="neutron">T(r)</button>
+      </div>
+      <div id="formula" class="formula"></div>
+
+      <h3>Broadening <i class="info" data-tip="Broadened function: every histogram bin is replaced by a Gaussian with standard deviation σ, a simple model of thermal motion and of the finite resolution of the experiment.&#10;Histogram: the unbroadened histogram (bin width from box 2), drawn as filled bars.&#10;Only one of the two is shown at a time. The CSV export contains the curves shown."></i></h3>
+      <div class="settings">
+        <span class="sl">σ</span>
+        <span class="sv"><input type="range" id="sigmaRange" min="0.005" max="0.4" step="0.005" value="0.1">
+          <input type="number" id="sigma" min="0.001" max="2" step="0.005" value="0.1"> Å</span>
+      </div>
+      <div class="choice" role="radiogroup" aria-label="Curves shown">
+        <span class="muted">show</span>
+        <label><input type="radio" name="layer" id="showBroad" checked> broadened function</label>
+        <label><input type="radio" name="layer" id="histogram"> histogram</label>
+      </div>
+
+      <h3>r range</h3>
+      <div class="row gap"><input type="number" id="rFrom" step="0.5" min="0"> – <input type="number" id="rTo" step="0.5" min="0"> Å
+        <button class="small" id="resetRange">full</button></div>
+
+      <h3>Curves <i class="info" data-tip="Element–element partials (pairs with H are hidden at first), shown as their contributions to the total: the partial functions weighted with the Faber–Ziman weights W = cᵢcⱼbᵢbⱼ/⟨b⟩² (Peterson et al. 2021, eqs. 24, 26, 61 and 66), so they add up to the total. N(r) is not weighted by scattering lengths and is shown as total only. Click a name here or in the plot legend to hide or show it."></i>
+        <span class="sep"></span><button class="small" id="curvesAll">all</button><button class="small" id="curvesNone">none</button></h3>
+      <div id="curveList" class="muted">–</div>
+      <h3>Highlighting <i class="info" data-tip="Left-click the plot to highlight the atom–atom distances of the region around that r in the 3D viewer; the highlighting stays while you turn the structure. Click into the highlighted region or press Esc to remove it.&#10;Region: r ± the half-width below (for the histogram: the bins whose centres lie in it).&#10;Every distance is given with its share of the area under the X-ray weighted pair density R(r) in the region. R(r) is never negative, so the shares add up to 100 % in every convention. Distances below the minimum share are not highlighted (at most 8 are). Colours are colour-blind safe; the stronger a distance, the brighter its colour. With neutrons, contributions of pairs with a negative product of scattering lengths are negative: the shares then refer to the area under |R(r)| of all pairs and such distances are marked 'negative'."></i>
+        <span class="sep"></span><button class="small" id="hlClear">clear</button></h3>
+      <div class="settings">
+        <span class="sl">region</span>
+        <span class="sv">r ± <input type="number" id="hlWidth" value="0.1" min="0.005" max="5" step="0.05"> Å</span>
+        <span class="sl">min. share</span>
+        <span class="sv"><input type="number" id="hlMin" value="10" min="0" max="100" step="1"> % of the R(r) area</span>
+      </div>
+
+    </section>
+  </aside>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
