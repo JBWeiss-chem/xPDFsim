@@ -3,6 +3,12 @@ xPDFsim documentation
 
 Welcome to the xPDFsim documentation. This code allows you to simply generate X-ray and neutron pair distribution functions (PDFs) based on cif files.
 
+.. figure:: gui_highlight.gif
+   :width: 100 %
+   :alt: Basic usage of the graphical user interface of xPDFsim
+
+   Basic usage of the graphical user interface.
+
 ########
 Features
 ########

@@ -46,6 +46,8 @@ Start the graphical user interface without a file:
 xPDFsim-gui
 ```
 
+![Basic usage of the graphical user interface of xPDFsim](https://raw.githubusercontent.com/JBWeiss-chem/xPDFsim/main/docs/gui_highlight.gif)
+
 All options are listed with `xPDFsim -h`.
 
 ## Releasing
