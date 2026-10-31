@@ -48,6 +48,21 @@ xPDFsim-gui
 
 All options are listed with `xPDFsim -h`.
 
+## Releasing
+
+The documentation on Read the Docs is rebuilt automatically after every push to `main` (version
+"latest") and for every new version tag (version "stable").
+
+New versions are published on PyPI by the GitHub workflow `.github/workflows/publish.yml`:
+
+1. Set the new version in `pyproject.toml` and describe the changes in `CHANGELOG.md`.
+2. Push to `main` and publish a release on GitHub with the version as tag (e.g. `0.1.0` or `v0.1.0`).
+
+The workflow checks that the tag matches the version, builds and tests the package and uploads it
+with PyPI trusted publishing, so no password or API token is stored. One-time setup on pypi.org:
+in the project `xPDFsim`, *Manage* → *Publishing* → *Add a new publisher* → GitHub, with owner
+`JBWeiss-chem`, repository `xPDFsim`, workflow `publish.yml` and environment `pypi`.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first

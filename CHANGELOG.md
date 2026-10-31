@@ -16,6 +16,7 @@
 - Partial occupancies and mixed sites are shown in the viewer: the occupied slice of a sphere in the
   atom's colour, the unoccupied rest much lighter.
 - `--no-plot` to only calculate, e.g. in scripts with `-o`.
+- GitHub workflow that publishes a GitHub release on PyPI (trusted publishing).
 
 ### Changed
 
