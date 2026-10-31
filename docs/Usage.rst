@@ -76,22 +76,17 @@ It opens in your default browser (options: ``--port``, default 8766, ``--host`` 
 
 Opening structures
 ==================
-Open one or more cif files with the *Open CIF…* button or drop them anywhere on the window, or pick one of ten classic inorganic, organic and hybrid structures from the Crystallography Open Database (COD) in the *Examples…* menu. Every structure of every file gets a box in box 1; click it to switch between them. Box 1 also shows the formula, space group and cell, for examples the original publication, and warnings about the file, e.g. when the atom sites do not match the formula given in the cif file.
+Open one or more cif files with the *Open CIF…* button or drop them anywhere on the window, or pick one of ten classic inorganic, organic and hybrid structures from the Crystallography Open Database (COD) in the *Examples…* menu.
 
 3D viewer
 =========
-Drag to turn the structure, use the mouse wheel to zoom and the right mouse button to move it; *a*, *b* and *c* look along the lattice vectors, *PNG* saves the picture. The legend of highlighted distances is shown at the top right, the legend of the elements and the axis compass at the bottom right; the structure is shifted so that they do not cover it. Hovering an atom shows its label, elements and occupancies. The toolbar sets:
-
-* **Cells**: the number of unit cells shown along a, b and c (one cell when a structure is loaded). *≈ cube* picks repeats that give a roughly cubic box, *≈ r max* a box about as thick as the maximum distance of the PDF in every direction. At most 40 000 atoms are drawn.
-* **show**: a menu to show or hide H atoms, bonds and the edges of the unit cell (in a supercell, those of the original unit cell), to draw *boundary atoms* (the bonded atoms just outside the cells, so that every bond ends at an atom) and to use a white instead of a dark background. Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds.
+Drag to turn the structure, use the mouse wheel to zoom and the right mouse button to move it; *a*, *b* and *c* look along the lattice vectors, *PNG* saves the picture. 
 
 .. figure:: gui_viewer.png
    :width: 80 %
    :align: center
 
    The 3D viewer with the Cu–O bonds of HKUST-1 highlighted (left-click on the first peak of the PDF); the rest of the structure is dimmed.
-
-Partly occupied sites are drawn like a pie chart: the slice of the sphere in the atom's colour is the occupancy, the rest is drawn in a much lighter colour, e.g. an atom with occupancy 0.75 has a light quarter. On mixed sites, e.g. Fe 0.5 / Ni 0.5, every element gets a slice in its own colour.
 
 Calculation (box 2)
 ===================
@@ -100,7 +95,7 @@ The histograms are calculated up to *r max* with the *bin width* given here, for
 PDF options (box 3)
 ===================
 * **Convention**: the function shown, for X-rays (upper rows: :math:`G(r)`, :math:`g(r)`, :math:`D(r)`, :math:`G_\mathrm{K}(r)`, :math:`R(r)`, :math:`\rho(r)`, :math:`T(r)`, :math:`N(r)`) or neutrons (lower row: the functions most used with neutrons). The box below the buttons gives the definition, the unit and :math:`\langle b \rangle^2` of the structure. Switching between functions is animated and needs no recalculation.
-* **Broadening**: the standard deviation σ of the Gaussian broadening (up to 0.4 Å), and whether the broadened function or the histogram is shown. The histogram is the function without broadening at the resolution of the bin width: every bar is the average of the function over its bin. All functions are linear in the histogram of :math:`R(r)`, so this is defined for every convention; terms of the average density, such as :math:`-4\pi\rho_0 r` in :math:`G(r)`, appear as bars too. The bars of the total are light grey, those of the partials in their colours.
+* **Broadening**: the standard deviation σ of the Gaussian broadening (up to 0.4 Å), and whether the broadened function or the histogram is shown. 
 * **r range**: the range of the plot.
 * **Curves**: the total and the element–element partials, and the asymptotes of the function (its low-r and high-r limits, Table 4 of Peterson *et al.*). Click a name to hide or show the curve. For X-rays, pairs with hydrogen are hidden at first, as H scatters X-rays weakly; for neutrons they are shown.
 * **Highlighting**: the settings for highlighting distances in the viewer (see below).

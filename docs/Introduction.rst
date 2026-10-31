@@ -95,8 +95,6 @@ Following Peterson *et al.*, :math:`g(r)` and :math:`G(r)` are the recommended f
 
    X-ray :math:`G(r)` of NaCl with its partials and the asymptotes :math:`-4\pi\rho_0 r` below the first peak and 0 (dashed).
 
-:math:`N(r)` is the average number of atoms within the distance :math:`r` of an atom. It is calculated from the unweighted radial distribution function :math:`\mathrm{RDF}(r) = \frac{1}{N} \sum_{\mu\nu} \delta(r - r_{\mu\nu})` (eq. 14) and is therefore not weighted by scattering lengths.
-
 Partial functions
 =================
 Every function except :math:`N(r)` is written out with its element-element partials. They are given as the contributions of the element pairs to the total, i.e. the partial functions multiplied by the Faber-Ziman weights (Appendix F of Peterson *et al.*)
@@ -105,13 +103,6 @@ Every function except :math:`N(r)` is written out with its element-element parti
   W_{ij} = c_i c_j \frac{b_i b_j}{\langle b \rangle^2}, \qquad \sum_{i,j} W_{ij} = 1,
 
 so that the partials add up to the total, for example :math:`G(r) = \sum_{i,j} W_{ij} G_{ij}(r)` (eq. 66). The weights of the two orders of an unlike pair (e.g. Na-Cl and Cl-Na) are combined into one partial.
-
-*************
-Structures
-*************
-xPDFsim reads structures from cif files with its own reader. Every data block with atom sites is one structure. The atoms of the asymmetric unit are expanded with the symmetry operations given in the file (``_space_group_symop_operation_xyz`` or ``_symmetry_equiv_pos_as_xyz``); copies that coincide (within 0.01 Å) on special positions are merged. Atoms of different labels on the same position form one site: their occupancies are added per element, which describes mixed sites (e.g. Fe/Ni) and split sites. All parts of disordered structures are kept with their occupancies, and the histograms are weighted with the product of the occupancies of both sites. Multi-line text fields are read as single values, so whole files that programs like Olex2 store in them (e.g. the refinement fcf file) do not interfere. If the atom sites do not match ``_chemical_formula_sum`` (e.g. missing H atoms), a warning is shown.
-
-All functions are normalised per atom, so they do not depend on the choice of the unit cell; the calculation uses the cell given in the file.
 
 *******
 Sources
