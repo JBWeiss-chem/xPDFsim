@@ -130,10 +130,11 @@ label.sc { display: inline-flex; align-items: center; gap: 4px; }
 label.sc input[type=number] { width: 38px; }
 #scInfo { font-size: 11px; }
 #scInfo .err { color: #b3261e; }
-#legend { position: absolute; left: 8px; bottom: 8px; background: rgba(255,255,255,.9); border-radius: 8px;
-  padding: 6px 11px; font-size: 13px; line-height: 1.6; max-width: 70%; }
+/* right-hand column: highlighting legend (top), element legend (above the compass), compass (bottom) */
+#legend { position: absolute; right: 8px; bottom: 144px; background: rgba(255,255,255,.9); border-radius: 8px;
+  padding: 6px 11px; font-size: 13px; line-height: 1.6; max-width: min(260px, 40%); }
 #legend:empty { display: none; }
-#hlLegend { position: absolute; left: 8px; top: 52px; background: rgba(20,24,32,.9); color: #f3f5f8; border-radius: 8px;
+#hlLegend { position: absolute; right: 8px; top: 52px; max-width: min(360px, 50%); background: rgba(20,24,32,.9); color: #f3f5f8; border-radius: 8px;
   padding: 6px 10px; font-size: 12px; line-height: 1.6; pointer-events: none; font-variant-numeric: tabular-nums; }
 #hlLegend i { display: inline-block; width: 18px; height: 5px; border-radius: 2px; margin-right: 7px; vertical-align: 2px; }
 #hlLegend span { color: #aab2c0; }

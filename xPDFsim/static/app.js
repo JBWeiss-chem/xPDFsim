@@ -861,9 +861,24 @@ new ResizeObserver(() => {
   const w = viewer.clientWidth, h = viewer.clientHeight;
   renderer.setSize(w, h);
   camera.aspect = w / Math.max(h, 1);
-  camera.updateProjectionMatrix();
-  requestRender();
+  updateViewOffset();
 }).observe(viewer);
+
+// The legends and the compass sit in a column at the right edge of the viewer; the picture is
+// shifted left by half the width of that column (camera view offset), so the structure is centred
+// in the free area. Picking with the mouse uses the same projection and stays correct.
+const COMPASS_SIZE = 130;
+function updateViewOffset() {
+  const w = viewer.clientWidth, h = Math.max(viewer.clientHeight, 1);
+  let column = 0;
+  if (S.active) {
+    column = COMPASS_SIZE + 12;
+    [$('legend'), $('hlLegend')].forEach((el) => { if (!el.hidden && el.innerHTML) column = Math.max(column, el.offsetWidth + 16); });
+  }
+  const shift = Math.min(column / 2, w / 4);
+  camera.setViewOffset(w, h, shift, 0, w, h);
+  requestRender();
+}
 
 // crystallographic axis compass (bottom right), drawn in a colour that contrasts with the background
 const axScene = new THREE.Scene();
@@ -892,11 +907,11 @@ function setBackground() {
   $('viewerWrap').style.background = white ? '#ffffff' : 'var(--viewer)';
   axArrows.forEach((a) => a.setColor(ink));
   axLabels.forEach((sp, i) => { sp.material.map?.dispose(); sp.material.map = labelTexture('abc'[i], ink); sp.material.needsUpdate = true; });
-  if (cellLines) cellLines.material.color.set(white ? '#444' : '#9aa5b8');
+  cellLines.forEach((l, k) => l.material.color.set(CELL_COLORS[white ? 'white' : 'dark'][k]));
   requestRender();
 }
 function renderCompass() {
-  const size = 130, w = viewer.clientWidth;
+  const size = COMPASS_SIZE, w = viewer.clientWidth;
   axCam.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(5);
   axCam.up.copy(camera.up);
   axCam.lookAt(0, 0, 0);
@@ -948,7 +963,9 @@ float turn = fract(atan(vLocal.z, vLocal.x) / ${TAU} + 1.0);
 if (turn >= vOccT) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), ${UNOCCUPIED_LIGHTEN});
 else if (turn >= vOccA) diffuseColor.rgb = vColB;`);
 };
-let meshes = [], cellLines = null;
+let meshes = [], cellLines = [];
+// edges of the cell (bright) and, for supercells, of the whole supercell (dim)
+const CELL_COLORS = { dark: ['#d3d9e3', '#5d6676'], white: ['#222831', '#a3aab6'] };
 const MAX_ATOMS = 40000;
 
 const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -975,7 +992,8 @@ function buildScene() {
   highlightDistances([]);
   meshes.forEach((m) => { root.remove(m); if (m.userData.atoms) m.geometry.dispose(); m.dispose(); });
   meshes = [];
-  if (cellLines) { root.remove(cellLines); cellLines.geometry.dispose(); cellLines = null; }
+  cellLines.forEach((l) => { root.remove(l); l.geometry.dispose(); l.material.dispose(); });
+  cellLines = [];
   requestRender();
   renderLegend();
   const e = S.active;
@@ -1048,15 +1066,20 @@ function buildScene() {
   instanced(cylGeo, partialMat, bonds.filter((b) => b.partial), placeBond);
   // unit cell box of the whole supercell
   if ($('showCell').checked) {
-    const corners = [];
-    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) corners.push(imgVec([i * S.sc[0], j * S.sc[1], k * S.sc[2]], L));
-    const edges = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
-    const pos = new Float32Array(72);
-    edges.forEach(([a, b], k) => { pos.set(corners[a], k * 6); pos.set(corners[b], k * 6 + 3); });
-    cellLines = new THREE.LineSegments(new THREE.BufferGeometry(),
-      new THREE.LineBasicMaterial({ color: $('whiteBg').checked ? '#444' : '#9aa5b8' }));
-    cellLines.geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    root.add(cellLines);
+    const box = (n, color) => {
+      const corners = [];
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) corners.push(imgVec([i * n[0], j * n[1], k * n[2]], L));
+      const edges = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+      const pos = new Float32Array(72);
+      edges.forEach(([a, b], k) => { pos.set(corners[a], k * 6); pos.set(corners[b], k * 6 + 3); });
+      const lines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color }));
+      lines.geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      root.add(lines);
+      cellLines.push(lines);
+    };
+    const [unitColor, superColor] = CELL_COLORS[$('whiteBg').checked ? 'white' : 'dark'];
+    box([1, 1, 1], unitColor);
+    if (S.sc.some((n) => n > 1)) box(S.sc, superColor);
   }
   L.forEach((v, i) => {
     const d = new THREE.Vector3(...v).normalize();
@@ -1068,7 +1091,7 @@ function buildScene() {
 
 function renderLegend() {
   const e = S.active;
-  if (!e) { $('legend').innerHTML = ''; return; }
+  if (!e) { $('legend').innerHTML = ''; updateViewOffset(); return; }
   const seen = new Map();
   // every element, also those that are only the minor part of mixed sites
   e.st.atoms.forEach((a) => (a.parts || [[a.el, a.occ, a.color]]).forEach(([el, , color]) => { if (!seen.has(el)) seen.set(el, color); }));
@@ -1076,6 +1099,7 @@ function renderLegend() {
   if (e.st.atoms.some((a) => a.occ < 0.99 || (a.parts && a.parts.length > 1)))
     html += '<i class="occ"></i>partly occupied (coloured slice = occupancy, light = unoccupied)';
   $('legend').innerHTML = html;
+  updateViewOffset();
 }
 
 function frameCamera(dir) {
@@ -1151,8 +1175,11 @@ $('showH').onchange = () => { buildScene(); showSupercell(); };
 $('whiteBg').onchange = setBackground;
 $('savePng').onclick = () => {
   if (!S.active) return;
+  // the picture without the shift for the legend column, i.e. with the structure centred
+  camera.clearViewOffset();
   renderer.render(scene, camera);
   renderer.domElement.toBlob((b) => download(b, `${baseName()}_structure.png`));
+  updateViewOffset();
 };
 
 // ---------- distances of a region of the PDF, highlighted in the viewer on click
@@ -1351,7 +1378,7 @@ function highlightDistances(types, info) {
   applyDim();
   $('hlLegend').hidden = !info;
   requestRender();
-  if (!info) return;
+  if (!info) { updateViewOffset(); return; }
   // below the toolbar, which wraps to several lines in narrow windows
   $('hlLegend').style.top = `${$('toolbar').offsetTop + $('toolbar').offsetHeight + 6}px`;
   const pct = (v) => `${(100 * v).toFixed(1)} %`;
@@ -1360,6 +1387,7 @@ function highlightDistances(types, info) {
     + '<div><span>click the highlighted region or press Esc to remove</span></div>';
   if (!on) {
     $('hlLegend').innerHTML = `${head}<div><span>no distance reaches ${pct(S.hlMin)} here</span></div>${foot}`;
+    updateViewOffset();
     return;
   }
   const e = S.active, st = e.st, L = st.L;
@@ -1408,6 +1436,7 @@ function highlightDistances(types, info) {
     + types.map((t) => `<div><i style="background:${t.color}"></i>${esc(t.pair)} <b>${distanceText(t)} Å</b>
       ${pct(t.share)}${t.negative ? ' <span class="neg">negative</span>' : ''} <span>· ${t.n} pairs per cell${t.ks.length > 1 ? `, ${t.ks.length} distances` : ''}</span></div>`).join('')
     + (truncated ? `<div><span>only the first ${MAX_HIGHLIGHT_PAIRS} pairs are drawn</span></div>` : '') + foot;
+  updateViewOffset();
 }
 const _dummy = new THREE.Object3D();
 function placeCylinder(mesh, a, b, r) {
