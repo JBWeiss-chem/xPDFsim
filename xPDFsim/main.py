@@ -2,11 +2,11 @@ import os
 import argparse
 import sys
 from .cif import read_structures
-from .pdf import CONVENTIONS, RADIATIONS, convert_R_r, gen_R_r, pair_weights, write_csv
+from .pdf import CONVENTIONS, RADIATIONS, baselines, convert_R_r, gen_R_r, pair_weights, write_csv
 from .utils import broaden_pdfs
 
 
-def broaden_or_truncate(table, sigma, r_max, histogram):
+def broaden_or_truncate(table, sigma, r_max, histogram, baseline=None):
     """Applies Gaussian broadening, or only cuts the raw histogram at r_max.
 
     Args:
@@ -14,6 +14,8 @@ def broaden_or_truncate(table, sigma, r_max, histogram):
         sigma (float): Standard deviation for Gaussian broadening.
         r_max (float or int): Maximum r to which the PDF was calculated
         histogram (Boolean): If True, no gaussian broadening is applied.
+        baseline (function): Optional, takes a grid r and returns the smooth
+        part of every function (label -> array), which is not broadened.
 
     Returns:
         dictionary: Broadened or truncated data.
@@ -21,7 +23,14 @@ def broaden_or_truncate(table, sigma, r_max, histogram):
     if histogram:
         inside = table["radii"] <= r_max
         return {label: values[inside] for label, values in table.items()}
-    return broaden_pdfs(table, sigma, r_max)
+    if baseline is None:
+        return broaden_pdfs(table, sigma, r_max)
+    peaks = {"radii": table["radii"]}
+    peaks.update((label, table[label] - b) for label, b in baseline(table["radii"]).items())
+    out = broaden_pdfs(peaks, sigma, r_max)
+    for label, b in baseline(out["radii"]).items():
+        out[label] = out[label] + b
+    return out
 
 
 def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="xray"):
@@ -44,7 +53,9 @@ def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="
     table, rho = gen_R_r(structure, r_max, dr=dr, radiation=radiation)
     weights, mean_b2 = pair_weights(structure, radiation)
     converted = convert_R_r(table, rho, convention, weights, mean_b2)
-    return broaden_or_truncate(converted, sigma, r_max, histogram), rho, mean_b2
+    labels = [label for label in converted if label != "radii"]
+    baseline = lambda r: baselines(convention, r, rho, weights, mean_b2, labels)
+    return broaden_or_truncate(converted, sigma, r_max, histogram, baseline), rho, mean_b2
 
 
 def show_in_gui(args, text):

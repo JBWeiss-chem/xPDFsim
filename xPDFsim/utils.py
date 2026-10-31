@@ -29,5 +29,5 @@ def broaden_pdfs(table, sigma, r_max):
     pdfs_broad *= dr / (sigma * np.sqrt(2 * np.pi))
 
     out = {"radii": radii_broad}
-    out.update({label: np.round(pdfs_broad[:, k], 4) for k, label in enumerate(labels)})
+    out.update({label: pdfs_broad[:, k] for k, label in enumerate(labels)})
     return out

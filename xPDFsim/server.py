@@ -218,6 +218,17 @@ def _settings(body):
         raise ClientError("r max and bin width must be numbers.")
 
 
+def _block(body, structures):
+    """Index of the requested structure of a CIF file."""
+    try:
+        block = int(body.get("block", 0))
+    except (TypeError, ValueError):
+        block = -1
+    if not 0 <= block < len(structures):
+        raise ClientError("Unknown structure.")
+    return block
+
+
 def api_load(body):
     """Reads a CIF file and calculates the PDF of every structure in it."""
     structures, messages = read_cif(str(body.get("text", "")))
@@ -234,9 +245,7 @@ def api_load(body):
 def api_pdf(body):
     """Recalculates the PDF of one structure of a CIF file with new settings."""
     structures, _ = read_cif(str(body.get("text", "")))
-    block = int(body.get("block", 0))
-    if not 0 <= block < len(structures):
-        raise ClientError("Unknown structure.")
+    block = _block(body, structures)
     r_max, dr = _settings(body)
     return {"pdf": pdf_payload(structures[block][1], r_max, dr)}
 
@@ -244,9 +253,7 @@ def api_pdf(body):
 def api_distances(body):
     """Distance types of one structure of a CIF file, for highlighting distances in the viewer."""
     structures, _ = read_cif(str(body.get("text", "")))
-    block = int(body.get("block", 0))
-    if not 0 <= block < len(structures):
-        raise ClientError("Unknown structure.")
+    block = _block(body, structures)
     r_max, _ = _settings(body)
     if not 0 < r_max <= MAX_R:
         raise ClientError(f"r max must be between 0 and {MAX_R:g} Å.")

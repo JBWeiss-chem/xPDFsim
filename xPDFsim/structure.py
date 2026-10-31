@@ -6,11 +6,22 @@ from .elements import ATOMIC_NUMBERS
 
 
 def cell_matrix(a, b, c, alpha, beta, gamma):
-    """Lattice vectors as rows (a along x, b in the xy plane), lengths in Å, angles in degrees."""
+    """Lattice vectors as rows (a along x, b in the xy plane), lengths in Å, angles in degrees.
+
+    Raises:
+        ValueError: If the parameters do not describe a cell with a volume.
+    """
+    if not all(np.isfinite([a, b, c, alpha, beta, gamma])) or min(a, b, c) <= 0:
+        raise ValueError("the cell lengths must be positive numbers")
+    if not all(0 < x < 180 for x in (alpha, beta, gamma)):
+        raise ValueError("the cell angles must be between 0 and 180°")
     al, be, ga = np.radians([alpha, beta, gamma])
     cx = c * np.cos(be)
     cy = c * (np.cos(al) - np.cos(be) * np.cos(ga)) / np.sin(ga)
-    cz = np.sqrt(max(c * c - cx * cx - cy * cy, 1e-12))
+    cz2 = c * c - cx * cx - cy * cy
+    if cz2 <= 1e-6 * c * c:                     # e.g. alpha > beta + gamma
+        raise ValueError(f"the cell angles {alpha:g}, {beta:g}, {gamma:g}° give no volume")
+    cz = np.sqrt(cz2)
     return np.array([[a, 0.0, 0.0], [b * np.cos(ga), b * np.sin(ga), 0.0], [cx, cy, cz]])
 
 

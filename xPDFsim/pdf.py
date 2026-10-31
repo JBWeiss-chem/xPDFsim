@@ -219,6 +219,23 @@ def convert_R_r(table, rho, convention, weights, mean_b2):
     return out
 
 
+def baselines(convention, r, rho, weights, mean_b2, labels):
+    """The terms c(r) W of linear_terms() on the grid r, for every label of a table.
+
+    They are smooth (constant or linear in r), so broadening must leave them
+    unchanged; broadening them with the histograms would bend them where the
+    Gaussians are cut off, at r = 0 and at the end of the histograms.
+
+    Returns:
+        dictionary: Label -> c(r) W (zero for N(r)).
+    """
+    if convention == "N_r":
+        return {label: np.zeros_like(r) for label in labels}
+    with np.errstate(divide="ignore"):         # a(r) is infinite at r = 0, c(r) is not
+        _, c = linear_terms(convention, r, rho, mean_b2)
+    return {label: c *(1.0 if label == "total" else weights[label]["W"]) for label in labels}
+
+
 def write_csv(table, filename):
     """Writes a table as a CSV file: radii, partials, total."""
     labels = ["radii"] + [label for label in table if label != "radii"]

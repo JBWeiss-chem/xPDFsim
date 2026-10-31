@@ -17,8 +17,12 @@ MERGE_TOL = 0.01                # Å: positions closer than this are the same si
 
 # ---------------------------------------------------------------- tokenizer
 
+class _Quoted(str):
+    """A quoted string or text field: a value even if it reads like 'loop_', 'data_x' or '_tag'."""
+
+
 def _tokenize(text):
-    """Yields CIF tokens; text fields (;...;) and quoted strings become one token."""
+    """Yields CIF tokens; text fields (;...;) and quoted strings become one _Quoted token."""
     lines = text.splitlines()
     i = 0
     while i < len(lines):
@@ -30,7 +34,7 @@ def _tokenize(text):
                 buf.append(lines[i])
                 i += 1
             i += 1
-            yield ("\n".join(buf)).strip()
+            yield _Quoted(("\n".join(buf)).strip())
             continue
         j, n = 0, len(line)
         while j < n:
@@ -44,7 +48,7 @@ def _tokenize(text):
                 # a closing quote must be followed by whitespace or the end of the line
                 while k < n and not (line[k] == ch and (k + 1 == n or line[k + 1].isspace())):
                     k += 1
-                yield line[j + 1:k]
+                yield _Quoted(line[j + 1:k])
                 j = k + 1
             else:
                 k = j
@@ -63,7 +67,9 @@ def _parse_blocks(text):
     while i < len(tokens):
         t = tokens[i]
         tl = t.lower()
-        if tl.startswith("data_"):
+        if isinstance(t, _Quoted):
+            i += 1                                      # a value without a tag
+        elif tl.startswith("data_"):
             cur = (t[5:], {}, [])
             blocks.append(cur)
             i += 1
@@ -72,14 +78,14 @@ def _parse_blocks(text):
         elif tl == "loop_":
             i += 1
             tags = []
-            while i < len(tokens) and tokens[i].startswith("_"):
+            while i < len(tokens) and _is_tag(tokens[i]):
                 tags.append(tokens[i].lower())
                 i += 1
             values = []
             while i < len(tokens):
                 v = tokens[i]
                 vl = v.lower()
-                if v.startswith("_") or vl == "loop_" or vl.startswith("data_"):
+                if not isinstance(v, _Quoted) and (v.startswith("_") or vl == "loop_" or vl.startswith("data_")):
                     break
                 values.append(v)
                 i += 1
@@ -93,6 +99,10 @@ def _parse_blocks(text):
         else:
             i += 1
     return blocks
+
+
+def _is_tag(token):
+    return token.startswith("_") and not isinstance(token, _Quoted)
 
 
 def _num(s):
@@ -232,7 +242,7 @@ def _element(type_symbol, label):
 def _formula_amounts(formula):
     """'C5 H Cu N4' -> {'C': 5, 'H': 1, 'Cu': 1, 'N': 4}."""
     amounts = {}
-    for el, n in re.findall(r"([A-Z][a-z]?)\s*([\d.]*)", formula):
+    for el, n in re.findall(r"([A-Z][a-z]?)\s*(\d+\.?\d*|\.\d+)?", formula):
         amounts[el] = amounts.get(el, 0.0) + (float(n) if n else 1.0)
     return amounts
 
@@ -335,7 +345,7 @@ def _read_block(name, items, loops):
     # compare with the formula given in the file (catches missing H atoms and the like)
     if items.get("_chemical_formula_sum", "?") not in ("?", "."):
         given, found = _formula_amounts(items["_chemical_formula_sum"]), structure.composition()
-        ref = next((el for el in given if el in found), None)
+        ref = next((el for el in given if el in found and given[el] > 0), None)
         if ref:
             scale = found[ref] / given[ref]
             missing = [el for el in given if el not in found]

@@ -291,8 +291,9 @@ function transform(pdf, conv, rad) {
   labels.forEach((l) => partials[l].forEach((y, k) => { total[k] += y; }));
   const terms = Array.from(r, (x) => CONV[conv].terms(x, rho, mean_b2));
   const apply = (y, W) => Float64Array.from(y, (v, k) => terms[k][0] * v + terms[k][1] * W);
-  const curves = labels.map((l, i) => ({ label: l, color: PALETTE[i % PALETTE.length], y: apply(partials[l], weights[l].W) }));
-  curves.push({ label: 'total', color: INK, total: true, y: apply(total, 1) });
+  // W is kept for broadening, which leaves the smooth term c(r)·W unchanged
+  const curves = labels.map((l, i) => ({ label: l, color: PALETTE[i % PALETTE.length], W: weights[l].W, y: apply(partials[l], weights[l].W) }));
+  curves.push({ label: 'total', color: INK, total: true, W: 1, y: apply(total, 1) });
   return { r, curves };
 }
 
@@ -318,9 +319,16 @@ function computeCurves(entry, conv, rad) {
   const hx = r.slice(0, n < 0 ? r.length : n);
   const hist = curves.map((c) => ({ ...c, y: c.y.slice(0, hx.length) }));
   const x = Float64Array.from({ length: Math.round(pdf.r_max / OUT_STEP) + 1 }, (_, i) => i * OUT_STEP);
-  const broad = curves.map((c) => ({ ...c, y: broaden(pdf.r0, pdf.dr, c.y, x, S.sigma) }));
-  // low-r and high-r limits (Table 4), drawn as dashed asymptotes
+  // only the peaks are broadened: the smooth term c(r)·W (e.g. −4πρ₀r of G(r)) would be bent
+  // where the Gaussians are cut off, at r = 0 and at the end of the histograms
   const mean_b2 = radiationWeights(pdf, rad).mean_b2;
+  const terms = CONV[conv].terms;
+  const base = (v, c) => (terms ? terms(v, pdf.rho, mean_b2)[1] * c.W : 0);
+  const broad = curves.map((c) => {
+    const peaks = Float64Array.from(c.y, (v, k) => v - base(r[k], c));
+    return { ...c, y: broaden(pdf.r0, pdf.dr, peaks, x, S.sigma).map((v, i) => v + base(x[i], c)) };
+  });
+  // low-r and high-r limits (Table 4), drawn as dashed asymptotes
   const lims = Array.from(x, (v) => CONV[conv].lim(v, pdf.rho, mean_b2));
   const refs = [0, 1].map((k) => Float64Array.from(lims, (l) => l[k]));
   return { conv, rad, x, curves: broad, hx, hist, dr: pdf.dr, refs, rMax: pdf.r_max };
