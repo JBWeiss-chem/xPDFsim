@@ -3,7 +3,7 @@
 Simulation of X-ray and neutron pair distribution functions (PDFs) from CIF files, with an interactive
 graphical user interface in the browser. Read the documentation [here](https://xpdfsim.readthedocs.io/en/latest/).
 
-![The 3D viewer of xPDFsim with the Cu–O bonds of HKUST-1 highlighted](https://raw.githubusercontent.com/JBWeiss-chem/xPDFsim/main/docs/gui_viewer.png)
+![Basic usage of the graphical user interface of xPDFsim](https://raw.githubusercontent.com/JBWeiss-chem/xPDFsim/main/docs/gui_highlight.gif)
 
 ## Features
 
@@ -41,24 +41,7 @@ Start the graphical user interface without a file:
 xPDFsim-gui
 ```
 
-![Basic usage of the graphical user interface of xPDFsim](https://raw.githubusercontent.com/JBWeiss-chem/xPDFsim/main/docs/gui_highlight.gif)
-
 All options are listed with `xPDFsim -h`.
-
-## Releasing
-
-The documentation on Read the Docs is rebuilt automatically after every push to `main` (version
-"latest") and for every new version tag (version "stable").
-
-New versions are published on PyPI by the GitHub workflow `.github/workflows/publish.yml`:
-
-1. Set the new version in `pyproject.toml` and describe the changes in `CHANGELOG.md`.
-2. Push to `main` and publish a release on GitHub with the version as tag (e.g. `0.1.0` or `v0.1.0`).
-
-The workflow checks that the tag matches the version, builds and tests the package and uploads it
-with PyPI trusted publishing, so no password or API token is stored. One-time setup on pypi.org:
-in the project `xPDFsim`, *Manage* → *Publishing* → *Add a new publisher* → GitHub, with owner
-`JBWeiss-chem`, repository `xPDFsim`, workflow `publish.yml` and environment `pypi`.
 
 ## Contributing
 

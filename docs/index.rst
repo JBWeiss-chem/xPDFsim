@@ -7,8 +7,6 @@ Welcome to the xPDFsim documentation. This code allows you to simply generate X-
    :width: 100 %
    :alt: Basic usage of the graphical user interface of xPDFsim
 
-   Basic usage of the graphical user interface.
-
 ########
 Features
 ########
