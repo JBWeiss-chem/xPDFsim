@@ -28,50 +28,50 @@ const CONV = {
   R: {
     name: 'R(r)', file: 'R_r', unit: 'Å⁻¹', legend: 'left',
     terms: () => [1, 0], lim: (r, rho) => [0, PI4 * rho * r * r],
-    formula: '<i>R</i>(<i>r</i>) = 1/<i>N</i> Σ<sub>μν</sub> <i>b</i><sub>μ</sub><i>b</i><sub>ν</sub>/⟨<i>b</i>⟩² δ(<i>r</i> − <i>r</i><sub>μν</sub>)', eq: 'eq. 15',
+    formula: '<var>R</var>(<var>r</var>) = 1/<var>N</var> Σ<sub>μν</sub> <var>b</var><sub>μ</sub><var>b</var><sub>ν</sub>/⟨<var>b</var>⟩² δ(<var>r</var> − <var>r</var><sub>μν</sub>)', eq: 'eq. 15',
     note: 'weighted radial distribution function',
   },
   rho: {
     name: 'ρ(r)', file: 'rho_r', unit: 'Å⁻³', legend: 'right',
     terms: (r) => [1 / (PI4 * r * r), 0], lim: (r, rho) => [0, rho],
-    formula: '<i>ρ</i>(<i>r</i>) = <i>R</i>(<i>r</i>) / 4π<i>r</i>²', eq: 'eq. 16', note: 'density function',
+    formula: '<var>ρ</var>(<var>r</var>) = <var>R</var>(<var>r</var>) / 4π<var>r</var>²', eq: 'eq. 16', note: 'density function',
   },
   g: {
     name: 'g(r)', file: 'g_r', unit: '', legend: 'right',
     terms: (r, rho) => [1 / (PI4 * rho * r * r), 0], lim: () => [0, 1],
-    formula: '<i>g</i>(<i>r</i>) = <i>ρ</i>(<i>r</i>)/<i>ρ</i>₀ = <i>R</i>(<i>r</i>) / 4π<i>ρ</i>₀<i>r</i>²', eq: 'eq. 22', note: 'pair distribution function (recommended)',
+    formula: '<var>g</var>(<var>r</var>) = <var>ρ</var>(<var>r</var>)/<var>ρ</var>₀ = <var>R</var>(<var>r</var>) / 4π<var>ρ</var>₀<var>r</var>²', eq: 'eq. 22', note: 'pair distribution function (recommended)',
   },
   GK: {
     name: 'G_K(r)', file: 'GK_r', unit: 'barn', legend: 'right',
     terms: (r, rho, b2) => [b2 / (PI4 * rho * r * r), -b2], lim: (r, rho, b2) => [-b2, 0],
-    formula: '<i>G</i><sub>K</sub>(<i>r</i>) = ⟨<i>b</i>⟩² [<i>g</i>(<i>r</i>) − 1]', eq: 'eq. 26', note: 'total radial distribution function (Keen 2001)',
+    formula: '<var>G</var><sub>K</sub>(<var>r</var>) = ⟨<var>b</var>⟩² [<var>g</var>(<var>r</var>) − 1]', eq: 'eq. 26', note: 'total radial distribution function (Keen 2001)',
   },
   G: {
     name: 'G(r)', file: 'G_r', unit: 'Å⁻²', legend: 'right',
     terms: (r, rho) => [1 / r, -PI4 * rho * r], lim: (r, rho) => [-PI4 * rho * r, 0],
-    formula: '<i>G</i>(<i>r</i>) = 4π<i>r</i> [<i>ρ</i>(<i>r</i>) − <i>ρ</i>₀] = <i>R</i>(<i>r</i>)/<i>r</i> − 4π<i>ρ</i>₀<i>r</i>', eq: 'eq. 19', note: 'reduced pair distribution function (recommended)',
+    formula: '<var>G</var>(<var>r</var>) = 4π<var>r</var> [<var>ρ</var>(<var>r</var>) − <var>ρ</var>₀] = <var>R</var>(<var>r</var>)/<var>r</var> − 4π<var>ρ</var>₀<var>r</var>', eq: 'eq. 19', note: 'reduced pair distribution function (recommended)',
   },
   D: {
     name: 'D(r)', file: 'D_r', unit: 'barn Å⁻²', legend: 'right',
     terms: (r, rho, b2) => [b2 / r, -PI4 * rho * b2 * r], lim: (r, rho, b2) => [-PI4 * rho * b2 * r, 0],
-    formula: '<i>D</i>(<i>r</i>) = ⟨<i>b</i>⟩² <i>G</i>(<i>r</i>)', eq: 'eq. 28', note: 'differential correlation function',
+    formula: '<var>D</var>(<var>r</var>) = ⟨<var>b</var>⟩² <var>G</var>(<var>r</var>)', eq: 'eq. 28', note: 'differential correlation function',
   },
   T: {
     name: 'T(r)', file: 'T_r', unit: 'barn Å⁻²', legend: 'left',
     terms: (r, rho, b2) => [b2 / r, 0], lim: (r, rho, b2) => [0, PI4 * rho * b2 * r],
-    formula: '<i>T</i>(<i>r</i>) = ⟨<i>b</i>⟩² <i>R</i>(<i>r</i>)/<i>r</i> = ⟨<i>b</i>⟩² [<i>G</i>(<i>r</i>) + 4π<i>ρ</i>₀<i>r</i>]', eq: 'eqs. 29, 32', note: 'total correlation function',
+    formula: '<var>T</var>(<var>r</var>) = ⟨<var>b</var>⟩² <var>R</var>(<var>r</var>)/<var>r</var> = ⟨<var>b</var>⟩² [<var>G</var>(<var>r</var>) + 4π<var>ρ</var>₀<var>r</var>]', eq: 'eqs. 29, 32', note: 'total correlation function',
   },
   N: {
     name: 'N(r)', file: 'N_r', unit: '', legend: 'left', totalOnly: true,
     lim: (r, rho) => [0, (PI4 / 3) * rho * r ** 3],
-    formula: '<i>N</i>(<i>r</i>) = ∫₀<sup><i>r</i></sup> RDF(<i>r</i>′) d<i>r</i>′', eq: 'eq. 31', note: 'coordination number (unweighted, total only)',
+    formula: '<var>N</var>(<var>r</var>) = ∫₀<sup><var>r</var></sup> RDF(<var>r</var>′) d<var>r</var>′', eq: 'eq. 31', note: 'coordination number (unweighted, total only)',
   },
 };
-// function names such as 'G_K(r)' with italic variables and the subscript, for HTML and SVG
+// function names such as 'G_K(r)' with italic variables (<var>) and the subscript, for HTML and SVG
 const nameParts = (n) => n.match(/^(.)(?:_(\w))?\((.)\)$/);
 const nameHtml = (n) => {
   const [, f, sub, v] = nameParts(n);
-  return `<i>${f}</i>${sub ? `<sub>${sub}</sub>` : ''}(<i>${v}</i>)`;
+  return `<var>${f}</var>${sub ? `<sub>${sub}</sub>` : ''}(<var>${v}</var>)`;
 };
 const nameSvg = (n) => {
   const [, f, sub, v] = nameParts(n);
@@ -312,8 +312,8 @@ function updatePdf(animate) {
   if (nError && S.rad === 'neutron') S.rad = 'xray';
   const cv = CONV[S.conv];
   const radNote = S.rad === 'neutron'
-    ? `neutron: <i>b</i> = coherent scattering length${e ? `, ⟨<i>b</i>⟩² = ${e.pdf.neutron.mean_b2.toPrecision(4)} barn` : ''}`
-    : `X-ray: <i>b</i> = <i>Z</i>·<i>r</i><sub>e</sub> (<i>Q</i> = 0)${e ? `, ⟨<i>b</i>⟩² = ${e.pdf.mean_b2.toPrecision(4)} barn` : ''}`;
+    ? `neutron: <var>b</var> = coherent scattering length${e ? `, ⟨<var>b</var>⟩² = ${e.pdf.neutron.mean_b2.toPrecision(4)} barn` : ''}`
+    : `X-ray: <var>b</var> = <var>Z</var>·<var>r</var><sub>e</sub> (<var>Q</var> = 0)${e ? `, ⟨<var>b</var>⟩² = ${e.pdf.mean_b2.toPrecision(4)} barn` : ''}`;
   $('formula').innerHTML = `${cv.formula}<br><span class="note">${cv.note}; ${cv.eq}${cv.unit ? `; unit: ${cv.unit}` : ''}<br>${radNote}</span>`;
   document.querySelectorAll('[data-conv]').forEach((b) => b.classList.toggle('on', b.dataset.conv === S.conv && b.dataset.rad === S.rad));
   $('pdfTitle').innerHTML = e ? `${S.rad === 'neutron' ? 'Neutron' : 'X-ray'} ${nameHtml(cv.name)} of ${esc(e.name)}` : 'Pair distribution function';
@@ -607,7 +607,7 @@ function showReadout(px, py) {
   const what = S.showHist ? ' (histogram bin)' : '';
   const hint = inHighlight(x) ? 'left-click: remove the highlighting'
     : `left-click: highlight distances in ${a.toFixed(2)}–${b.toFixed(2)} Å`;
-  ro.innerHTML = `<div><i style="background:transparent"></i><b><i>r</i> = ${x.toFixed(3)} Å</b>${what}</div>${rows.join('')}<div class="hint">${hint}</div>`;
+  ro.innerHTML = `<div><i style="background:transparent"></i><b><var>r</var> = ${x.toFixed(3)} Å</b>${what}</div>${rows.join('')}<div class="hint">${hint}</div>`;
   ro.hidden = false;
   const box = $('pdfWrap').getBoundingClientRect(), cb = chart.getBoundingClientRect();
   const w = ro.offsetWidth, h = ro.offsetHeight;

@@ -88,15 +88,15 @@
   "doi": "10.1021/jp103212z"
  },
  {
-  "cod": "7111973",
-  "file": "7111973.cif",
-  "name": "ZIF-8",
-  "formula": "Zn(mIm)₂",
+  "cod": "7237205",
+  "file": "7237205.cif",
+  "name": "ZIF-4 (with DMF)",
+  "formula": "Zn(Im)₂·0.5 DMF",
   "category": "hybrid",
-  "space_group": "I -4 3 m",
-  "temperature": "298",
-  "reference": "Shekhah et al., Chemical Communications 50, 2089 (2014)",
-  "doi": "10.1039/c3cc47495j"
+  "space_group": "P b c a",
+  "temperature": "100",
+  "reference": "Frentzel-Beyme et al., Journal of Materials Chemistry A 7, 985 (2019)",
+  "doi": "10.1039/C8TA08016J"
  },
  {
   "cod": "2107954",
