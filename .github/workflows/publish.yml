@@ -32,9 +32,10 @@ jobs:
           python -m pip install build twine
           python -m build
           python -m twine check --strict dist/*
-      - name: Smoke test of the built wheel
+      - name: Unit tests and smoke test of the built wheel
         run: |
           python -m pip install dist/*.whl
+          python -m unittest discover tests
           cd "$(mktemp -d)"
           xPDFsim -o --no-plot -p G_r "${GITHUB_WORKSPACE}/xPDFsim/static/examples/9015662.cif"
           xPDFsim -o --no-plot -p GK_r --radiation neutron "${GITHUB_WORKSPACE}/xPDFsim/static/examples/4002052.cif"

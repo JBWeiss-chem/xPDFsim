@@ -18,6 +18,7 @@ import threading
 import time
 import webbrowser
 from socketserver import ThreadingMixIn
+from urllib.parse import urlsplit
 from wsgiref.simple_server import WSGIRequestHandler, WSGIServer, make_server
 
 import math
@@ -32,6 +33,8 @@ STATIC = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)
 MAX_BODY = 50 * 1024 * 1024     # bytes of a request
 MAX_R = 100.0                   # Angstrom
 MAX_BINS = 200_000
+SIGMA_MAX = 0.4                 # Angstrom, largest broadening of the GUI (SIGMA_MAX in app.js)
+R_EXTRA = 6 * SIGMA_MAX         # the histograms go beyond r_max by the reach of the Gaussians
 BOND_TOLERANCE = 0.45           # Angstrom added to the sum of covalent radii
 MIN_BOND = 0.6                  # shorter contacts are alternative (disordered) positions
 TYPE_WINDOW = 0.02              # Angstrom, windows in which the strongest distance types are kept
@@ -112,10 +115,10 @@ def pdf_payload(structure, r_max, dr):
     convert them into the other functions."""
     if not 0 < r_max <= MAX_R:
         raise ClientError(f"r max must be between 0 and {MAX_R:g} Å.")
-    if not 0 < dr or (r_max + 1) / dr > MAX_BINS:
+    if not 0 < dr or (r_max + R_EXTRA) / dr > MAX_BINS:
         raise ClientError(f"The bin width must be positive and give at most {MAX_BINS} bins.")
     start = time.time()
-    table, rho = gen_R_r(structure, r_max, dr, verbose=False)
+    table, rho = gen_R_r(structure, r_max, dr, verbose=False, r_extra=R_EXTRA)
     weights, mean_b2 = pair_weights(structure)
     # neutron weights: the browser converts the X-ray partials with the ratio of the bb factors
     try:
@@ -257,13 +260,40 @@ def api_distances(body):
     r_max, _ = _settings(body)
     if not 0 < r_max <= MAX_R:
         raise ClientError(f"r max must be between 0 and {MAX_R:g} Å.")
-    return {"distances": distance_types(structures[block][1], r_max)}
+    # the broadened contributions of distances up to R_EXTRA beyond r_max reach into the plot
+    return {"distances": distance_types(structures[block][1], r_max + R_EXTRA)}
 
 
 API = {"/api/load": api_load, "/api/pdf": api_pdf, "/api/distances": api_distances}
 
 # file and settings that the GUI opens when it starts (set by the command line tool)
 PRELOAD = {}
+
+# Host names under which the server answers (set by serve()); empty: any. A server on the loopback
+# interface only answers to loopback names, so a web page cannot reach it through a domain of its
+# own that resolves to 127.0.0.1 (DNS rebinding) and read, e.g., the preloaded file.
+LOOPBACK = {"localhost", "127.0.0.1", "::1"}
+ALLOWED_HOSTS = set()
+
+
+def _hostname(netloc):
+    """'localhost:8766' -> 'localhost', '[::1]:8766' -> '::1'."""
+    try:
+        return (urlsplit(f"//{netloc}").hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+def _forbidden(environ, path):
+    """Reason to refuse a request from outside the GUI, or None."""
+    host = environ.get("HTTP_HOST", "")
+    if ALLOWED_HOSTS and _hostname(host) not in ALLOWED_HOSTS:
+        return "unknown host"
+    # the calculations can only be started by the GUI itself, not by other web pages
+    origin = environ.get("HTTP_ORIGIN")
+    if path in API and origin is not None and urlsplit(origin).netloc.lower() != host.lower():
+        return "cross-origin request"
+    return None
 
 
 def app(environ, start_response):
@@ -279,6 +309,9 @@ def app(environ, start_response):
     def js(obj, status="200 OK"):
         return reply(status, json.dumps(obj).encode())
 
+    reason = _forbidden(environ, path)
+    if reason:
+        return reply("403 Forbidden", reason.encode(), "text/plain")
     if path == "/api/startup":
         return js(PRELOAD)
     if path in API:
@@ -328,6 +361,9 @@ def serve(host="127.0.0.1", port=8766, open_browser=True, preload=None):
     """
     PRELOAD.clear()
     PRELOAD.update(preload or {})
+    ALLOWED_HOSTS.clear()
+    if host in LOOPBACK or host.startswith("127."):
+        ALLOWED_HOSTS.update(LOOPBACK | {host})
     try:
         httpd = make_server(host, port, app, server_class=ThreadingWSGIServer,
                             handler_class=QuietHandler)

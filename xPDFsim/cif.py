@@ -13,6 +13,7 @@ from .elements import ATOMIC_NUMBERS
 from .structure import Structure, cell_matrix
 
 MERGE_TOL = 0.01                # Å: positions closer than this are the same site
+_NEIGHBOR_BINS = np.array(np.meshgrid(*[[-1, 0, 1]] * 3, indexing="ij")).reshape(3, -1).T
 
 
 # ---------------------------------------------------------------- tokenizer
@@ -60,7 +61,8 @@ def _tokenize(text):
 
 
 def _parse_blocks(text):
-    """Returns a list of (block name, items, loops); items: tag -> value, loops: (tags, rows)."""
+    """Returns a list of (block name, items, loops, warnings); items: tag -> value,
+    loops: (tags, rows)."""
     blocks, cur = [], None
     tokens = list(_tokenize(text))
     i = 0
@@ -70,7 +72,7 @@ def _parse_blocks(text):
         if isinstance(t, _Quoted):
             i += 1                                      # a value without a tag
         elif tl.startswith("data_"):
-            cur = (t[5:], {}, [])
+            cur = (t[5:], {}, [], [])
             blocks.append(cur)
             i += 1
         elif cur is None:
@@ -90,7 +92,12 @@ def _parse_blocks(text):
                 values.append(v)
                 i += 1
             if tags:
-                nrow = len(values) // len(tags)
+                nrow, rest = divmod(len(values), len(tags))
+                if rest:
+                    # e.g. an unquoted value with a space: the columns after it are shifted
+                    cur[3].append(f"The loop of {tags[0]} has {len(values)} values, which is not a "
+                                  f"multiple of its {len(tags)} tags; the last {rest} were ignored. "
+                                  "Values with spaces must be quoted.")
                 cur[2].append((tags, [values[r * len(tags):(r + 1) * len(tags)] for r in range(nrow)]))
         elif t.startswith("_"):
             if i + 1 < len(tokens):
@@ -294,6 +301,17 @@ def _read_block(name, items, loops):
     # merged; atoms of different labels on the same position form one site whose occupancies
     # are the sums per element (substitutional disorder, split sites)
     sites = []                  # [frac, {element: occupancy}, label]
+    # sites are found by their bin in a grid whose bins are at least MERGE_TOL thick, so a
+    # close site lies in the same or a neighbouring bin (periodic)
+    spacing = 1 / np.linalg.norm(np.linalg.inv(L).T, axis=1)
+    grid = np.maximum(np.floor(spacing / MERGE_TOL), 1).astype(int)
+    by_bin = {}                 # bin -> indices of sites
+
+    def nearby(f):
+        b = np.minimum(np.floor(f * grid).astype(int), grid - 1)
+        keys = {tuple((b + d) % grid) for d in _NEIGHBOR_BINS}
+        return tuple(b), [k for key in keys for k in by_bin.get(key, ())]
+
     for r in rows:
         label = r[c_label] if c_label is not None else (r[c_type] if c_type is not None else "X")
         if c_calc is not None and r[c_calc].lower() == "dum":
@@ -317,14 +335,16 @@ def _read_block(name, items, loops):
             if not close[k, unique].any():
                 unique.append(k)
         for f in images[unique]:
-            if sites:
-                existing = np.array([s[0] for s in sites])
-                d = existing - f
+            key, candidates = nearby(f)
+            if candidates:
+                d = np.array([sites[k][0] for k in candidates]) - f
                 dist = np.linalg.norm((d - np.round(d)) @ L, axis=1)
-                k = int(np.argmin(dist))
-                if dist[k] < MERGE_TOL:
-                    sites[k][1][el] = sites[k][1].get(el, 0.0) + occ
+                best = int(np.argmin(dist))
+                if dist[best] < MERGE_TOL:
+                    site = sites[candidates[best]]
+                    site[1][el] = site[1].get(el, 0.0) + occ
                     continue
+            by_bin.setdefault(key, []).append(len(sites))
             sites.append([f, {el: occ}, label])
     if not sites:
         raise ValueError("no atom sites")
@@ -373,7 +393,7 @@ def read_structures(text):
         ValueError: If the file contains no readable structure.
     """
     structures, messages, errors = [], [], []
-    for name, items, loops in _parse_blocks(text):
+    for name, items, loops, block_warnings in _parse_blocks(text):
         if not any("_atom_site_fract_x" in tags for tags, _ in loops):
             continue
         try:
@@ -382,7 +402,7 @@ def read_structures(text):
             errors.append(f"{name}: {e}")
             continue
         structures.append((name, structure))
-        messages += [w for w in warnings if w not in messages]
+        messages += [w for w in block_warnings + warnings if w not in messages]
     if not structures:
         raise ValueError(errors[0] if errors else "No structure (data block with atom sites) found in the file.")
     return structures, messages

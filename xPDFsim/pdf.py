@@ -35,7 +35,7 @@ CONVENTIONS = {
 }
 
 
-def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray"):
+def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray", r_extra=1.0):
     """Takes a Structure, calculates neighbor lists, transforms them
     into a histogram, and finally transforms them into the weighted radial
     distribution function R(r) [Peterson et al. (2021), eq. (15)].
@@ -46,6 +46,8 @@ def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray"):
         dr (float or int): Bin width of the histogram.
         verbose (Boolean): If True, progress messages are printed.
         radiation (string): "xray" or "neutron", sets the scattering lengths.
+        r_extra (float): The histograms go on to r_max + r_extra, so that
+        broadening near r_max includes the peaks beyond it (about 6 sigma).
 
     Returns:
         dictionary: Table of the R(r) histograms. The partials are the
@@ -58,9 +60,9 @@ def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray"):
     rho = total_atoms / structure.volume
     weights, _ = pair_weights(structure, radiation)
 
-    # Histogram bins; calculated up to r_max+1 so that broadening near r_max
-    # is not truncated
-    n_bins = int(round((r_max + 1) / dr))
+    # Histogram bins; calculated up to r_max + r_extra so that broadening near
+    # r_max is not truncated
+    n_bins = int(round((r_max + r_extra) / dr))
     radii = (np.arange(n_bins) + 0.5) * dr
 
     if verbose:
@@ -71,7 +73,7 @@ def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray"):
         print("Calculating PDF...\n")
 
     occupancies = get_occupancies(structure, elements)
-    centers, neighbors, _, distances = structure.neighbor_list(r_max + 1)
+    centers, neighbors, _, distances = structure.neighbor_list(r_max + r_extra)
 
     # Histogram distances of every element pair, weighted by the occupancies
     # of both sites (1 for ordered structures); the bins are uniform, so the

@@ -4,6 +4,9 @@ import numpy as np
 
 from .elements import ATOMIC_NUMBERS
 
+MAX_BINS_PER_AXIS = 64          # bins of the cell list along every lattice direction
+PAIRS_PER_CHUNK = 2_000_000     # candidate pairs compared at once (memory of the neighbor list)
+
 
 def cell_matrix(a, b, c, alpha, beta, gamma):
     """Lattice vectors as rows (a along x, b in the xy plane), lengths in Å, angles in degrees.
@@ -95,11 +98,14 @@ class Structure:
     def neighbor_list(self, r):
         """All pairs of sites closer than r, in both directions.
 
-        Every site is compared with every site in all cell images that can
-        lie within r; the images needed along each lattice direction follow
-        from the spacing of the lattice planes (1/|b_k|, b: reciprocal vectors),
-        which holds for triclinic cells too. The work is vectorised over
-        all pairs of sites per image.
+        The sites are sorted into a grid of bins (a cell list) whose thickness
+        along every lattice direction is at least r where the cell allows it,
+        so only sites in nearby bins are compared; the bins needed along each
+        direction follow from the spacing of the lattice planes (1/|b_k|,
+        b: reciprocal vectors), which holds for triclinic cells too. Bins
+        beyond the cell edge are its periodic images, which also covers cells
+        thinner than r. The work grows linearly with the number of sites and
+        is vectorised over all candidate pairs, in chunks of bounded memory.
 
         Args:
             r (float): Cutoff distance in Å.
@@ -111,24 +117,44 @@ class Structure:
         """
         L = self.lattice
         cart = self.coords
-        spacing = 1 / np.linalg.norm(np.linalg.inv(L).T, axis=1)
-        reach = np.ceil(r / spacing).astype(int)
-        ranges = [np.arange(-n, n + 1) for n in reach]
-        offsets = np.array(np.meshgrid(*ranges, indexing="ij")).reshape(3, -1).T
         n = len(cart)
-        diff0 = cart[np.newaxis, :, :] - cart[:, np.newaxis, :]          # j - i
+        spacing = 1 / np.linalg.norm(np.linalg.inv(L).T, axis=1)
+        bins = np.clip(np.floor(spacing / r), 1, MAX_BINS_PER_AXIS).astype(int)
+        reach = np.ceil(r * bins / spacing).astype(int)
+        # bin of every site; frac % 1 can round to exactly 1.0
+        b = np.minimum(np.floor(self.frac * bins).astype(int), bins - 1)
+        flat = lambda idx: (idx[:, 0] * bins[1] + idx[:, 1]) * bins[2] + idx[:, 2]
+        site_bin = flat(b)
+        order = np.argsort(site_bin, kind="stable")
+        counts = np.bincount(site_bin, minlength=int(np.prod(bins)))
+        starts = np.cumsum(counts) - counts
+
+        ranges = [np.arange(-k, k + 1) for k in reach]
+        shifts = np.array(np.meshgrid(*ranges, indexing="ij")).reshape(3, -1).T
         centers, neighbors, images, distances = [], [], [], []
-        for offset in offsets:
-            d = np.linalg.norm(diff0 + offset @ L, axis=2)
-            mask = d <= r
-            if not offset.any():
-                mask &= ~np.eye(n, dtype=bool)                           # no site with itself
-            i, j = np.nonzero(mask)
-            if len(i):
-                centers.append(i)
-                neighbors.append(j)
-                images.append(np.broadcast_to(offset, (len(i), 3)))
-                distances.append(d[i, j])
+        for shift in shifts:
+            unwrapped = b + shift
+            offset = np.floor_divide(unwrapped, bins)              # cell image of the target bin
+            target = flat(unwrapped - offset * bins)
+            n_cand = counts[target]
+            # chunks of centre sites with at most PAIRS_PER_CHUNK candidate pairs
+            cum = np.cumsum(n_cand)
+            cuts = np.searchsorted(cum, np.arange(PAIRS_PER_CHUNK, cum[-1] if n else 0, PAIRS_PER_CHUNK))
+            for lo, hi in zip(np.r_[0, cuts], np.r_[cuts, n]):
+                c = n_cand[lo:hi]
+                total = int(c.sum())
+                if not total:
+                    continue
+                i = np.repeat(np.arange(lo, hi), c)
+                first = np.cumsum(c) - c
+                j = order[np.arange(total) - np.repeat(first - starts[target[lo:hi]], c)]
+                off = offset[i]
+                d = np.linalg.norm(cart[j] + off @ L - cart[i], axis=1)
+                keep = (d <= r) & ((i != j) | off.any(axis=1))      # no site with itself
+                centers.append(i[keep])
+                neighbors.append(j[keep])
+                images.append(off[keep])
+                distances.append(d[keep])
         if not centers:
             return np.zeros(0, int), np.zeros(0, int), np.zeros((0, 3), int), np.zeros(0)
         return (np.concatenate(centers), np.concatenate(neighbors),

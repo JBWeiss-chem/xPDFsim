@@ -50,7 +50,9 @@ def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="
         float: Number density of the material.
         float: <b_coh>^2 in barn.
     """
-    table, rho = gen_R_r(structure, r_max, dr=dr, radiation=radiation)
+    # the Gaussians reach about 6 sigma beyond r_max
+    r_extra = 0.0 if histogram else max(1.0, 6 * sigma)
+    table, rho = gen_R_r(structure, r_max, dr=dr, radiation=radiation, r_extra=r_extra)
     weights, mean_b2 = pair_weights(structure, radiation)
     converted = convert_R_r(table, rho, convention, weights, mean_b2)
     labels = [label for label in converted if label != "radii"]

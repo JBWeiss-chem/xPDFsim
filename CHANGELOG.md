@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Broadening no longer bends the smooth term of the functions (e.g. −⟨b⟩² of G<sub>K</sub>(r),
+  −4πρ₀r of G(r)) near r = 0; only the peaks are broadened.
+- The broadened functions are no longer rounded to 4 decimals, which set small partials to zero.
+- With wide Gaussians, the functions near r max include the peaks beyond it: the histograms go 6σ
+  beyond r max (σ is limited to 0.4 Å in the GUI).
+- Cells without a volume (e.g. impossible angles) are rejected instead of giving NaN or hanging.
+- Quoted values and text fields that start with `_`, `loop_` or `data_` are read as values.
+
+### Changed
+
+- Cell list for the neighbour search and a grid for merging sites in the CIF reader: both scale
+  linearly with the size of the structure (e.g. 5000 sites: bonds in 0.02 s instead of 18 s).
+- The GUI server only answers to loopback host names and refuses calculations requested by other
+  web pages.
+- A warning for CIF loops whose number of values is not a multiple of their tags.
+- Unit tests (`python -m unittest discover tests`), run by a GitHub workflow on every push.
+
 ## 0.1.0
 
 ### New

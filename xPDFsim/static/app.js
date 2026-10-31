@@ -705,15 +705,19 @@ document.querySelectorAll('[data-conv]').forEach((b) => {
     if (radChanged && S.hl) updateHighlight();    // the shares depend on the scattering lengths
   };
 });
-function setSigma(v, fromRange) {
+// the server calculates the histograms 6·SIGMA_MAX beyond r max (server.SIGMA_MAX), so broadening
+// near r max includes the peaks beyond it
+const SIGMA_MAX = 0.4;
+function setSigma(v) {
   if (!(v > 0)) return;
+  v = Math.min(v, SIGMA_MAX);
   S.sigma = v;
-  if (fromRange) $('sigma').value = v; else $('sigmaRange').value = v;
+  $('sigma').value = v; $('sigmaRange').value = v;
   updatePdf(false);
   if (S.hl) updateHighlight();
 }
-$('sigmaRange').oninput = () => setSigma(+$('sigmaRange').value, true);
-$('sigma').onchange = () => setSigma(+$('sigma').value, false);
+$('sigmaRange').oninput = () => setSigma(+$('sigmaRange').value);
+$('sigma').onchange = () => setSigma(+$('sigma').value);
 // broadened function and histogram are exclusive (two radio buttons)
 function setLayer(hist) {
   S.showHist = hist;
@@ -1604,7 +1608,7 @@ const CLI_CONVENTIONS = { G_r: 'G', g_r: 'g', D_r: 'D', GK_r: 'GK', R_r: 'R', rh
     const st = pre.settings || {};
     if (st.r_max) $('rMax').value = st.r_max;
     if (st.dr) $('binWidth').value = st.dr;
-    if (st.sigma) { $('sigma').value = st.sigma; setSigma(st.sigma, false); }
+    if (st.sigma) { $('sigma').value = st.sigma; setSigma(st.sigma); }
     setLayer(!!st.histogram);
     if (CLI_CONVENTIONS[st.pdf_type]) S.conv = CLI_CONVENTIONS[st.pdf_type];
     S.rad = st.radiation === 'neutron' ? 'neutron' : 'xray';
