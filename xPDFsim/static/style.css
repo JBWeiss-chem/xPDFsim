@@ -139,7 +139,7 @@ label.sc input[type=number] { width: 38px; }
 #hlLegend .neg { color: #ff9e7a; }
 #legend i { display: inline-block; width: 13px; height: 13px; border-radius: 50%; margin: 0 4px 0 10px; vertical-align: -2px; }
 #legend i:first-child { margin-left: 0; }
-#legend i.occ { background: conic-gradient(from 90deg, #8a93a3 0 75%, transparent 0); border: 1px solid #8a93a3; box-sizing: border-box; }
+#legend i.occ { background: conic-gradient(from 90deg, #8a93a3 0 75%, #dde1e7 0); border: 1px solid #8a93a3; box-sizing: border-box; }
 #tooltip { position: absolute; pointer-events: none; background: rgba(20,24,32,.9); color: #fff; padding: 3px 7px;
   border-radius: 5px; font-size: 12px; white-space: nowrap; }
 #dropHint { position: absolute; inset: 12px; border: 2px dashed #9aa5b8; border-radius: 12px; display: flex;

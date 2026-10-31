@@ -93,7 +93,7 @@ Drag to turn the structure, use the mouse wheel to zoom and the right mouse butt
 
    The 3D viewer with the Cu–O bonds of HKUST-1 highlighted (left-click on the first peak of the PDF); the rest of the structure is dimmed.
 
-Partly occupied sites are drawn like a cake: the coloured slice of the sphere is the occupancy, e.g. an atom with occupancy 0.75 is a sphere with a quarter cut out. On mixed sites, e.g. Fe 0.5 / Ni 0.5, every element gets a slice in its own colour.
+Partly occupied sites are drawn like a pie chart: the slice of the sphere in the atom's colour is the occupancy, the rest is drawn in a much lighter colour, e.g. an atom with occupancy 0.75 has a light quarter. On mixed sites, e.g. Fe 0.5 / Ni 0.5, every element gets a slice in its own colour.
 
 Calculation (box 2)
 ===================

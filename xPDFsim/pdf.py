@@ -24,14 +24,14 @@ RADIATIONS = ("xray", "neutron")
 # Real-space functions of Table 4 of Peterson et al. (2021) with their units,
 # the most commonly used first
 CONVENTIONS = {
-    "G_r": "atom Å⁻²",           # reduced pair distribution function, eq. (19)
+    "G_r": "Å⁻²",                # reduced pair distribution function, eq. (19)
     "g_r": "",                   # pair distribution function, eq. (22)
-    "D_r": "barn atom Å⁻²",      # differential correlation function, eq. (28)
+    "D_r": "barn Å⁻²",           # differential correlation function, eq. (28)
     "GK_r": "barn",              # total radial distribution function, eq. (26)
-    "R_r": "atom Å⁻¹",           # weighted radial distribution function, eq. (15)
-    "rho_r": "atom Å⁻³",         # density function, eq. (16)
-    "T_r": "barn atom Å⁻²",      # total correlation function, eq. (29)
-    "N_r": "atom",               # coordination number, eq. (31)
+    "R_r": "Å⁻¹",                # weighted radial distribution function, eq. (15)
+    "rho_r": "Å⁻³",              # density function, eq. (16)
+    "T_r": "barn Å⁻²",           # total correlation function, eq. (29)
+    "N_r": "",                   # coordination number, eq. (31)
 }
 
 

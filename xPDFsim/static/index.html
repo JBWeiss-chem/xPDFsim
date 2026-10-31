@@ -30,7 +30,7 @@
   <!-- ======================= left: structure + calculation -->
   <aside id="left">
     <section class="card">
-      <h2><span class="num">1</span>Structure <i class="info" data-tip="Open CIF files with the button at the top right or drop them anywhere on the window. Every structure of every file (a CIF can hold several data blocks) gets a box below: click it to switch. Each keeps its own calculated PDF.&#10;Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds. Partly occupied sites are drawn like a cake: the coloured slice is the occupancy, e.g. an atom with occupancy 0.75 is a sphere with a quarter cut out; on mixed sites, the second element follows as a slice in its own colour."></i></h2>
+      <h2><span class="num">1</span>Structure <i class="info" data-tip="Open CIF files with the button at the top right or drop them anywhere on the window. Every structure of every file (a CIF can hold several data blocks) gets a box below: click it to switch. Each keeps its own calculated PDF.&#10;Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds. Partly occupied sites are drawn like a pie chart: the slice in the atom's colour is the occupancy, the rest is much lighter, e.g. an atom with occupancy 0.75 has a light quarter; on mixed sites, the second element follows as a slice in its own colour."></i></h2>
       <div id="structList" hidden></div>
       <div id="structInfo" class="muted">Load a CIF file to start.</div>
       <div id="warnings"></div>
@@ -106,22 +106,22 @@
       <h3>Convention <i class="info" data-tip="Definitions and units of Peterson, Olds, McDonnell &amp; Page, J. Appl. Cryst. 54, 317 (2021), Table 4, with the corrections of Peterson &amp; Keen, J. Appl. Cryst. 54, 1542 (2021). All functions are derived from the same histograms. The X-ray scattering length of an atom is approximated by its value at Q = 0, b = Z·rₑ (the Q dependence of the form factors is neglected); ⟨b⟩² = (Σ cᵢbᵢ)² is given in barn; ρ₀ is the average number density.&#10;G(r) = 4πr[ρ(r) − ρ₀]: reduced pair distribution function (PDFgui), −4πρ₀r at low r, uniform weighting at all r.&#10;g(r) = ρ(r)/ρ₀: pair distribution function, 0 at low r and 1 at high r.&#10;D(r) = ⟨b⟩² G(r): differential correlation function.&#10;G_K(r) = ⟨b⟩²[g(r) − 1]: total radial distribution function (Keen 2001), −⟨b⟩² at low r.&#10;R(r): weighted radial distribution function, from which all others are derived.&#10;ρ(r) = R(r)/4πr²: density function.&#10;T(r) = ⟨b⟩² R(r)/r: total correlation function, symmetric peaks.&#10;N(r): running coordination number, the average number of atoms within r of an atom (not weighted by scattering lengths).&#10;The paper recommends G(r) and g(r).&#10;Neutron: the same functions with the coherent neutron scattering lengths (Neutron Data Booklet, Sears' values) instead of b = Z·rₑ. Some elements (e.g. H, Ti, Mn) have negative scattering lengths, so neutron partials and ⟨b⟩ can be negative or small. The neutron row has the functions most used with neutrons; R(r), ρ(r) and N(r) are available from the command line."></i></h3>
       <div class="radlabel">X-ray</div>
       <div class="seg" id="conv">
-        <button data-conv="G" data-rad="xray">G(r)</button>
-        <button data-conv="g" data-rad="xray">g(r)</button>
-        <button data-conv="D" data-rad="xray">D(r)</button>
-        <button data-conv="GK" data-rad="xray">G<sub>K</sub>(r)</button>
-        <button data-conv="R" data-rad="xray">R(r)</button>
-        <button data-conv="rho" data-rad="xray">ρ(r)</button>
-        <button data-conv="T" data-rad="xray">T(r)</button>
-        <button data-conv="N" data-rad="xray">N(r)</button>
+        <button data-conv="G" data-rad="xray"><i>G</i>(<i>r</i>)</button>
+        <button data-conv="g" data-rad="xray"><i>g</i>(<i>r</i>)</button>
+        <button data-conv="D" data-rad="xray"><i>D</i>(<i>r</i>)</button>
+        <button data-conv="GK" data-rad="xray"><i>G</i><sub>K</sub>(<i>r</i>)</button>
+        <button data-conv="R" data-rad="xray"><i>R</i>(<i>r</i>)</button>
+        <button data-conv="rho" data-rad="xray"><i>ρ</i>(<i>r</i>)</button>
+        <button data-conv="T" data-rad="xray"><i>T</i>(<i>r</i>)</button>
+        <button data-conv="N" data-rad="xray"><i>N</i>(<i>r</i>)</button>
       </div>
       <div class="radlabel">neutron</div>
       <div class="seg seg5" id="convN">
-        <button data-conv="G" data-rad="neutron">G(r)</button>
-        <button data-conv="g" data-rad="neutron">g(r)</button>
-        <button data-conv="D" data-rad="neutron">D(r)</button>
-        <button data-conv="GK" data-rad="neutron">G<sub>K</sub>(r)</button>
-        <button data-conv="T" data-rad="neutron">T(r)</button>
+        <button data-conv="G" data-rad="neutron"><i>G</i>(<i>r</i>)</button>
+        <button data-conv="g" data-rad="neutron"><i>g</i>(<i>r</i>)</button>
+        <button data-conv="D" data-rad="neutron"><i>D</i>(<i>r</i>)</button>
+        <button data-conv="GK" data-rad="neutron"><i>G</i><sub>K</sub>(<i>r</i>)</button>
+        <button data-conv="T" data-rad="neutron"><i>T</i>(<i>r</i>)</button>
       </div>
       <div id="formula" class="formula"></div>
 
@@ -150,7 +150,7 @@
         <span class="sl">region</span>
         <span class="sv">r ± <input type="number" id="hlWidth" value="0.1" min="0.005" max="5" step="0.05"> Å</span>
         <span class="sl">min. share</span>
-        <span class="sv"><input type="number" id="hlMin" value="10" min="0" max="100" step="1"> % of the R(r) area</span>
+        <span class="sv"><input type="number" id="hlMin" value="10" min="0" max="100" step="1"> % of the <i>R</i>(<i>r</i>) area</span>
         <span class="sl">rod thickness</span>
         <span class="sv"><input type="range" id="hlRod" min="0.05" max="0.6" step="0.01" value="0.2"> <span id="hlRodVal" class="val"></span></span>
         <span class="sl">other atoms</span>

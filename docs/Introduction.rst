@@ -37,7 +37,7 @@ where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance 
      - :math:`G(r) = 4\pi r [\rho(r) - \rho_0]`
      - :math:`-4\pi\rho_0 r`
      - :math:`0`
-     - atom Å\ :sup:`-2`
+     - Å\ :sup:`-2`
    * - ``g_r``
      - pair distribution function
      - :math:`g(r) = \rho(r) / \rho_0`
@@ -49,7 +49,7 @@ where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance 
      - :math:`D(r) = \langle b \rangle^2 G(r)`
      - :math:`-4\pi\rho_0 \langle b \rangle^2 r`
      - :math:`0`
-     - barn atom Å\ :sup:`-2`
+     - barn Å\ :sup:`-2`
    * - ``GK_r``
      - total radial distribution function
      - :math:`G_\mathrm{K}(r) = \langle b \rangle^2 [g(r) - 1]`
@@ -61,25 +61,25 @@ where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance 
      - :math:`R(r)`
      - :math:`0`
      - :math:`4\pi\rho_0 r^2`
-     - atom Å\ :sup:`-1`
+     - Å\ :sup:`-1`
    * - ``rho_r``
      - density function
      - :math:`\rho(r) = R(r) / 4\pi r^2`
      - :math:`0`
      - :math:`\rho_0`
-     - atom Å\ :sup:`-3`
+     - Å\ :sup:`-3`
    * - ``T_r``
      - total correlation function
      - :math:`T(r) = \langle b \rangle^2 R(r) / r`
      - :math:`0`
      - :math:`4\pi\rho_0 \langle b \rangle^2 r`
-     - barn atom Å\ :sup:`-2`
+     - barn Å\ :sup:`-2`
    * - ``N_r``
      - coordination number
      - :math:`N(r) = \int_0^r \mathrm{RDF}(r')\,\mathrm{d}r'`
      - :math:`0`
      - :math:`\tfrac{4}{3}\pi\rho_0 r^3`
-     - atom
+     - –
 
 .. figure:: NaCl_g_r.png
    :width: 100 %

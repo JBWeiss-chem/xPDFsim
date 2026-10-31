@@ -26,50 +26,58 @@ const MIN_BAR_PX = 4;           // minimum width of a histogram bar on screen
 const PI4 = 4 * Math.PI;
 const CONV = {
   R: {
-    name: 'R(r)', file: 'R_r', unit: 'atom Å⁻¹', legend: 'left',
+    name: 'R(r)', file: 'R_r', unit: 'Å⁻¹', legend: 'left',
     terms: () => [1, 0], lim: (r, rho) => [0, PI4 * rho * r * r],
-    formula: 'R(r) = 1/N Σ<sub>μν</sub> b<sub>μ</sub>b<sub>ν</sub>/⟨b⟩² δ(r − r<sub>μν</sub>)', eq: 'eq. 15',
+    formula: '<i>R</i>(<i>r</i>) = 1/<i>N</i> Σ<sub>μν</sub> <i>b</i><sub>μ</sub><i>b</i><sub>ν</sub>/⟨<i>b</i>⟩² δ(<i>r</i> − <i>r</i><sub>μν</sub>)', eq: 'eq. 15',
     note: 'weighted radial distribution function',
   },
   rho: {
-    name: 'ρ(r)', file: 'rho_r', unit: 'atom Å⁻³', legend: 'right',
+    name: 'ρ(r)', file: 'rho_r', unit: 'Å⁻³', legend: 'right',
     terms: (r) => [1 / (PI4 * r * r), 0], lim: (r, rho) => [0, rho],
-    formula: 'ρ(r) = R(r) / 4πr²', eq: 'eq. 16', note: 'density function',
+    formula: '<i>ρ</i>(<i>r</i>) = <i>R</i>(<i>r</i>) / 4π<i>r</i>²', eq: 'eq. 16', note: 'density function',
   },
   g: {
     name: 'g(r)', file: 'g_r', unit: '', legend: 'right',
     terms: (r, rho) => [1 / (PI4 * rho * r * r), 0], lim: () => [0, 1],
-    formula: 'g(r) = ρ(r)/ρ₀ = R(r) / 4πρ₀r²', eq: 'eq. 22', note: 'pair distribution function (recommended)',
+    formula: '<i>g</i>(<i>r</i>) = <i>ρ</i>(<i>r</i>)/<i>ρ</i>₀ = <i>R</i>(<i>r</i>) / 4π<i>ρ</i>₀<i>r</i>²', eq: 'eq. 22', note: 'pair distribution function (recommended)',
   },
   GK: {
     name: 'G_K(r)', file: 'GK_r', unit: 'barn', legend: 'right',
     terms: (r, rho, b2) => [b2 / (PI4 * rho * r * r), -b2], lim: (r, rho, b2) => [-b2, 0],
-    formula: 'G<sub>K</sub>(r) = ⟨b⟩² [g(r) − 1]', eq: 'eq. 26', note: 'total radial distribution function (Keen 2001)',
+    formula: '<i>G</i><sub>K</sub>(<i>r</i>) = ⟨<i>b</i>⟩² [<i>g</i>(<i>r</i>) − 1]', eq: 'eq. 26', note: 'total radial distribution function (Keen 2001)',
   },
   G: {
-    name: 'G(r)', file: 'G_r', unit: 'atom Å⁻²', legend: 'right',
+    name: 'G(r)', file: 'G_r', unit: 'Å⁻²', legend: 'right',
     terms: (r, rho) => [1 / r, -PI4 * rho * r], lim: (r, rho) => [-PI4 * rho * r, 0],
-    formula: 'G(r) = 4πr [ρ(r) − ρ₀] = R(r)/r − 4πρ₀r', eq: 'eq. 19', note: 'reduced pair distribution function (recommended)',
+    formula: '<i>G</i>(<i>r</i>) = 4π<i>r</i> [<i>ρ</i>(<i>r</i>) − <i>ρ</i>₀] = <i>R</i>(<i>r</i>)/<i>r</i> − 4π<i>ρ</i>₀<i>r</i>', eq: 'eq. 19', note: 'reduced pair distribution function (recommended)',
   },
   D: {
-    name: 'D(r)', file: 'D_r', unit: 'barn atom Å⁻²', legend: 'right',
+    name: 'D(r)', file: 'D_r', unit: 'barn Å⁻²', legend: 'right',
     terms: (r, rho, b2) => [b2 / r, -PI4 * rho * b2 * r], lim: (r, rho, b2) => [-PI4 * rho * b2 * r, 0],
-    formula: 'D(r) = ⟨b⟩² G(r)', eq: 'eq. 28', note: 'differential correlation function',
+    formula: '<i>D</i>(<i>r</i>) = ⟨<i>b</i>⟩² <i>G</i>(<i>r</i>)', eq: 'eq. 28', note: 'differential correlation function',
   },
   T: {
-    name: 'T(r)', file: 'T_r', unit: 'barn atom Å⁻²', legend: 'left',
+    name: 'T(r)', file: 'T_r', unit: 'barn Å⁻²', legend: 'left',
     terms: (r, rho, b2) => [b2 / r, 0], lim: (r, rho, b2) => [0, PI4 * rho * b2 * r],
-    formula: 'T(r) = ⟨b⟩² R(r)/r = ⟨b⟩² [G(r) + 4πρ₀r]', eq: 'eqs. 29, 32', note: 'total correlation function',
+    formula: '<i>T</i>(<i>r</i>) = ⟨<i>b</i>⟩² <i>R</i>(<i>r</i>)/<i>r</i> = ⟨<i>b</i>⟩² [<i>G</i>(<i>r</i>) + 4π<i>ρ</i>₀<i>r</i>]', eq: 'eqs. 29, 32', note: 'total correlation function',
   },
   N: {
-    name: 'N(r)', file: 'N_r', unit: 'atom', legend: 'left', totalOnly: true,
+    name: 'N(r)', file: 'N_r', unit: '', legend: 'left', totalOnly: true,
     lim: (r, rho) => [0, (PI4 / 3) * rho * r ** 3],
-    formula: 'N(r) = ∫₀<sup>r</sup> RDF(r′) dr′', eq: 'eq. 31', note: 'coordination number (unweighted, total only)',
+    formula: '<i>N</i>(<i>r</i>) = ∫₀<sup><i>r</i></sup> RDF(<i>r</i>′) d<i>r</i>′', eq: 'eq. 31', note: 'coordination number (unweighted, total only)',
   },
 };
-// names with a subscript (G_K) for HTML and SVG
-const nameHtml = (n) => n.replace(/_(\w)/, '<sub>$1</sub>');
-const nameSvg = (n) => n.replace(/_(\w)/, '<tspan baseline-shift="sub" font-size="75%">$1</tspan>');
+// function names such as 'G_K(r)' with italic variables and the subscript, for HTML and SVG
+const nameParts = (n) => n.match(/^(.)(?:_(\w))?\((.)\)$/);
+const nameHtml = (n) => {
+  const [, f, sub, v] = nameParts(n);
+  return `<i>${f}</i>${sub ? `<sub>${sub}</sub>` : ''}(<i>${v}</i>)`;
+};
+const nameSvg = (n) => {
+  const [, f, sub, v] = nameParts(n);
+  const it = (x) => `<tspan font-style="italic">${x}</tspan>`;
+  return `${it(f)}${sub ? `<tspan baseline-shift="sub" font-size="75%">${sub}</tspan>` : ''}(${it(v)})`;
+};
 
 // ------------------------------------------------------------------ API
 async function api(path, body) {
@@ -304,8 +312,8 @@ function updatePdf(animate) {
   if (nError && S.rad === 'neutron') S.rad = 'xray';
   const cv = CONV[S.conv];
   const radNote = S.rad === 'neutron'
-    ? `neutron: b = coherent scattering length${e ? `, ⟨b⟩² = ${e.pdf.neutron.mean_b2.toPrecision(4)} barn` : ''}`
-    : `X-ray: b = Z·rₑ (Q = 0)${e ? `, ⟨b⟩² = ${e.pdf.mean_b2.toPrecision(4)} barn` : ''}`;
+    ? `neutron: <i>b</i> = coherent scattering length${e ? `, ⟨<i>b</i>⟩² = ${e.pdf.neutron.mean_b2.toPrecision(4)} barn` : ''}`
+    : `X-ray: <i>b</i> = <i>Z</i>·<i>r</i><sub>e</sub> (<i>Q</i> = 0)${e ? `, ⟨<i>b</i>⟩² = ${e.pdf.mean_b2.toPrecision(4)} barn` : ''}`;
   $('formula').innerHTML = `${cv.formula}<br><span class="note">${cv.note}; ${cv.eq}${cv.unit ? `; unit: ${cv.unit}` : ''}<br>${radNote}</span>`;
   document.querySelectorAll('[data-conv]').forEach((b) => b.classList.toggle('on', b.dataset.conv === S.conv && b.dataset.rad === S.rad));
   $('pdfTitle').innerHTML = e ? `${S.rad === 'neutron' ? 'Neutron' : 'X-ray'} ${nameHtml(cv.name)} of ${esc(e.name)}` : 'Pair distribution function';
@@ -326,6 +334,7 @@ function updatePdf(animate) {
   }
   current = next;
   syncRange();
+  updateControlStates();                  // after `current` is set: the plot controls depend on it
 }
 
 // smooth transition between conventions: curves morph, appearing/vanishing curves fade
@@ -412,8 +421,8 @@ function drawChart(data) {
   svg += `<rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="none" stroke="#c9ced8"/>`;
   // axis labels
   const conv = CONV[data.conv];
-  svg += `<text x="${(ml + W - mr) / 2}" y="${H - 8}" text-anchor="middle" fill="${INK}" font-size="13"><tspan font-style="italic">r</tspan> / Å</text>`;
-  const yl = nameSvg(conv.unit ? `${conv.name} / ${conv.unit}` : conv.name);
+  svg += `<text x="${(ml + W - mr) / 2}" y="${H - 8}" text-anchor="middle" fill="${INK}" font-size="13"><tspan font-style="italic">r</tspan> (Å)</text>`;
+  const yl = `${nameSvg(conv.name)}${conv.unit ? ` (${conv.unit})` : ''}`;
   svg += `<text transform="translate(16 ${(mt + H - mb) / 2}) rotate(-90)" text-anchor="middle" fill="${INK}" font-size="13">${yl}</text>`;
   // curves: only the points inside the visible range (plus one on each side)
   const visibleRange = (xs) => {
@@ -598,7 +607,7 @@ function showReadout(px, py) {
   const what = S.showHist ? ' (histogram bin)' : '';
   const hint = inHighlight(x) ? 'left-click: remove the highlighting'
     : `left-click: highlight distances in ${a.toFixed(2)}–${b.toFixed(2)} Å`;
-  ro.innerHTML = `<div><i style="background:transparent"></i><b>r = ${x.toFixed(3)} Å</b>${what}</div>${rows.join('')}<div class="hint">${hint}</div>`;
+  ro.innerHTML = `<div><i style="background:transparent"></i><b><i>r</i> = ${x.toFixed(3)} Å</b>${what}</div>${rows.join('')}<div class="hint">${hint}</div>`;
   ro.hidden = false;
   const box = $('pdfWrap').getBoundingClientRect(), cb = chart.getBoundingClientRect();
   const w = ro.offsetWidth, h = ro.offsetHeight;
@@ -871,12 +880,13 @@ const cylGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1);
 const solidMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05 });
 // bonds to partly occupied sites are translucent
 const partialMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05, transparent: true, opacity: 0.45, depthWrite: false });
-// Atoms: the occupancy of a site is shown like a cake. The sphere is coloured over the angle
+// Atoms: the occupancy of a site is shown like a pie chart. The sphere is coloured over the angle
 // around the vertical axis up to occupancy x 360°; the sphere's area is spread evenly over that
 // angle, so the coloured fraction of the surface equals the occupancy. On mixed sites the second
-// element follows as a slice in its own colour. The empty slice is cut out, and two half-disc
-// walls (wallMat, drawn only for partly occupied sites) close the cut.
+// element follows as a slice in its own colour. The unoccupied rest is drawn in a much lighter
+// version of the atom's colour.
 const TAU = 6.283185307179586;
+const UNOCCUPIED_LIGHTEN = 0.7;           // mix of the unoccupied slice with white
 const atomMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05 });
 atomMat.onBeforeCompile = (shader) => {
   shader.vertexShader = shader.vertexShader
@@ -899,47 +909,9 @@ varying float vOccT;
 varying vec3 vColB;`)
     .replace('#include <color_fragment>', `#include <color_fragment>
 float turn = fract(atan(vLocal.z, vLocal.x) / ${TAU} + 1.0);
-if (turn >= vOccT) discard;
-if (turn >= vOccA) diffuseColor.rgb = vColB;`);
+if (turn >= vOccT) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), ${UNOCCUPIED_LIGHTEN});
+else if (turn >= vOccA) diffuseColor.rgb = vColB;`);
 };
-// the two walls of the cut: a half disc (x >= 0 in the xy plane) turned about the vertical axis
-// to the angle 0 (wall 0) or occupancy x 360° (wall 1); a slightly darker 'inside' colour
-const wallMat = new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.0, side: THREE.DoubleSide });
-wallMat.onBeforeCompile = (shader) => {
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', `#include <common>
-attribute float wall;
-attribute float occT;
-attribute vec3 colB;
-varying float vWall;
-varying vec3 vColB;
-float wallAngle;`)
-    .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
-wallAngle = wall > 0.5 ? occT * ${TAU} : 0.0;
-objectNormal = vec3(-sin(wallAngle), 0.0, cos(wallAngle));`)
-    .replace('#include <begin_vertex>', `#include <begin_vertex>
-transformed = vec3(position.x * cos(wallAngle), position.y, position.x * sin(wallAngle));
-vWall = wall; vColB = colB;`);
-  shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', `#include <common>
-varying float vWall;
-varying vec3 vColB;`)
-    .replace('#include <color_fragment>', `#include <color_fragment>
-if (vWall > 0.5) diffuseColor.rgb = vColB;
-diffuseColor.rgb *= 0.8;`);
-};
-// geometry of the walls: two copies of a half disc, marked by the attribute 'wall'
-const wallGeo = (() => {
-  const half = new THREE.CircleGeometry(1, 24, -Math.PI / 2, Math.PI);
-  const pos = half.attributes.position.array, idx = half.index.array, n = pos.length / 3;
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([...pos, ...pos]), 3));
-  geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(6 * n).fill(0), 3));
-  geo.setAttribute('wall', new THREE.BufferAttribute(new Float32Array(2 * n).fill(1, n), 1));
-  geo.setIndex([...idx, ...Array.from(idx, (i) => i + n)]);
-  half.dispose();
-  return geo;
-})();
 let meshes = [], cellLines = null;
 const MAX_ATOMS = 40000;
 
@@ -965,7 +937,7 @@ function instanced(geo, mat, items, place) {
 
 function buildScene() {
   highlightDistances([]);
-  meshes.forEach((m) => { root.remove(m); if (m.userData.atoms || m.userData.ownGeometry) m.geometry.dispose(); m.dispose(); });
+  meshes.forEach((m) => { root.remove(m); if (m.userData.atoms) m.geometry.dispose(); m.dispose(); });
   meshes = [];
   if (cellLines) { root.remove(cellLines); cellLines.geometry.dispose(); cellLines = null; }
   requestRender();
@@ -1028,21 +1000,13 @@ function buildScene() {
       occT[k] = Math.min(1, parts.reduce((sum, p) => sum + p[1], 0));
       _c.set(parts[1] ? parts[1][2] : parts[0][2]);
       colB.set([_c.r, _c.g, _c.b], 3 * k);
-      if (occT[k] > 0.995) occT[k] = 1.01;     // fully occupied: nothing cut out
+      if (occT[k] > 0.995) occT[k] = 1.01;     // fully occupied: no unoccupied slice
       if (!parts[1] && occA[k] > 0.995) occA[k] = 1.01;
     });
     atomMesh.geometry.setAttribute('occA', new THREE.InstancedBufferAttribute(occA, 1));
     atomMesh.geometry.setAttribute('occT', new THREE.InstancedBufferAttribute(occT, 1));
     atomMesh.geometry.setAttribute('colB', new THREE.InstancedBufferAttribute(colB, 3));
     atomMesh.userData.atoms = true;
-    // walls of the cut for the partly occupied sites (own geometry copy for the attributes)
-    const cut = atoms.map((it, k) => k).filter((k) => occT[k] < 1);
-    const wallMesh = instanced(wallGeo.clone(), wallMat, cut.map((k) => atoms[k]), placeAtom);
-    if (wallMesh) {
-      wallMesh.geometry.setAttribute('occT', new THREE.InstancedBufferAttribute(Float32Array.from(cut, (k) => occT[k]), 1));
-      wallMesh.geometry.setAttribute('colB', new THREE.InstancedBufferAttribute(Float32Array.from(cut.flatMap((k) => [...colB.subarray(3 * k, 3 * k + 3)])), 3));
-      wallMesh.userData.ownGeometry = true;
-    }
   }
   instanced(cylGeo, solidMat, bonds.filter((b) => !b.partial), placeBond);
   instanced(cylGeo, partialMat, bonds.filter((b) => b.partial), placeBond);
@@ -1074,7 +1038,7 @@ function renderLegend() {
   e.st.atoms.forEach((a) => (a.parts || [[a.el, a.occ, a.color]]).forEach(([el, , color]) => { if (!seen.has(el)) seen.set(el, color); }));
   let html = [...seen].map(([el, c]) => `<i style="background:${c}"></i>${esc(el)}`).join('');
   if (e.st.atoms.some((a) => a.occ < 0.99 || (a.parts && a.parts.length > 1)))
-    html += '<i class="occ"></i>partly occupied (coloured slice = occupancy)';
+    html += '<i class="occ"></i>partly occupied (coloured slice = occupancy, light = unoccupied)';
   $('legend').innerHTML = html;
 }
 
@@ -1264,7 +1228,7 @@ const MAX_HIGHLIGHT_PAIRS = 10000;
 let dimmed = false;
 function applyDim() {
   const op = dimmed ? S.hlDim : 1;
-  [solidMat, atomMat, wallMat].forEach((m) => {
+  [solidMat, atomMat].forEach((m) => {
     m.transparent = op < 1; m.opacity = op; m.depthWrite = op >= 1; m.visible = op > 0; m.needsUpdate = true;
   });
   partialMat.opacity = dimmed ? S.hlDim * 0.6 : 0.45;
@@ -1328,7 +1292,7 @@ function highlightDistances(types, info) {
   // below the toolbar, which wraps to several lines in narrow windows
   $('hlLegend').style.top = `${$('toolbar').offsetTop + $('toolbar').offsetHeight + 6}px`;
   const pct = (v) => `${(100 * v).toFixed(1)} %`;
-  const head = `<div class="lock">${info.a.toFixed(2)}–${info.b.toFixed(2)} Å: share of the ${S.rad === 'neutron' ? 'neutron |R(r)|' : 'X-ray R(r)'} area</div>`;
+  const head = `<div class="lock">${info.a.toFixed(2)}–${info.b.toFixed(2)} Å: share of the ${S.rad === 'neutron' ? `neutron |${nameHtml('R(r)')}|` : `X-ray ${nameHtml('R(r)')}`} area</div>`;
   const foot = (info.others > 0.0005 ? `<div><i style="background:transparent"></i>other distances ${pct(info.others)}${info.more ? ` (${info.more} more above ${pct(S.hlMin)})` : ''}</div>` : '')
     + '<div><span>click the highlighted region or press Esc to remove</span></div>';
   if (!on) {
