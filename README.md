@@ -7,16 +7,11 @@ graphical user interface in the browser. Read the documentation [here](https://x
 
 ## Features
 
-- Built-in CIF reader (symmetry expansion, partial occupancies, mixed sites, several structures per file)
-- Simulation of R(r), ρ(r), g(r), G<sub>K</sub>(r), G(r), D(r), T(r) and N(r), defined as in Peterson *et al.*, [J. Appl. Cryst. 54, 317 (2021)](https://doi.org/10.1107/S1600576720015630)
+- Simulation of R(r), ρ(r), g(r), G<sub>K</sub>(r), G(r), D(r), T(r) and N(r), defined as in Peterson *et al.* [(2021)](https://doi.org/10.1107/S1600576720015630)
 - X-ray and neutron PDFs, with all element-element partial PDFs
-- Graphical user interface: 3D structure viewer, instant switching between all functions, broadening
-  or raw histogram, zoom and pan, export as CSV, SVG and PNG
-- Click a region of the PDF to highlight the atom pairs that contribute most to it in the 3D viewer,
-  with their share of the PDF
-- Ten example structures from the Crystallography Open Database
-- Export of the simulated PDFs to a CSV file from the command line
-- Only one dependency: numpy
+- Graphical user interface in the browser with a 3D structure viewer and interactive graphs
+- Highlighting of the atom pairs that contribute most to a region of the PDF, with their share of it
+- Export of the simulated PDFs to a CSV file
 
 ## Installation
 
