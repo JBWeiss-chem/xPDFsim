@@ -7,10 +7,10 @@ name = "xPDFsim"
 version = "0.0.3"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE", "xPDFsim/static/vendor/three/LICENSE"]
-description = "Simple simulation of X-ray pair distribution functions."
+description = "Simulation of X-ray and neutron pair distribution functions from CIF files, with a browser GUI."
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["xPDF", "disordered materials", "simulation", "crystallography", "scattering", "X-ray"]
+keywords = ["PDF", "pair distribution function", "total scattering", "disordered materials", "simulation", "crystallography", "X-ray", "neutron"]
 authors = [
     { name = "Jan-Benedikt Weiß" }
 ]

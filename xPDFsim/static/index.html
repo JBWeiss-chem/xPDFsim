@@ -30,14 +30,14 @@
   <!-- ======================= left: structure + calculation -->
   <aside id="left">
     <section class="card">
-      <h2><span class="num">1</span>Structure <i class="info" data-tip="Open CIF files with the button at the top right or drop them anywhere on the window. Every structure of every file (a CIF can hold several data blocks) gets a box below: click it to switch. Each keeps its own calculated PDF.&#10;Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds. Partly occupied sites: the coloured part of the sphere (from the bottom) is the occupancy, e.g. half of the sphere for 0.5; on mixed sites, the second element follows as a band in its own colour; the empty rest is drawn see-through."></i></h2>
+      <h2><span class="num">1</span>Structure <i class="info" data-tip="Open CIF files with the button at the top right or drop them anywhere on the window. Every structure of every file (a CIF can hold several data blocks) gets a box below: click it to switch. Each keeps its own calculated PDF.&#10;Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds. Partly occupied sites are drawn like a cake: the coloured slice is the occupancy, e.g. an atom with occupancy 0.75 is a sphere with a quarter cut out; on mixed sites, the second element follows as a slice in its own colour."></i></h2>
       <div id="structList" hidden></div>
       <div id="structInfo" class="muted">Load a CIF file to start.</div>
       <div id="warnings"></div>
     </section>
 
     <section class="card">
-      <h2><span class="num">2</span>Calculation <i class="info" data-tip="The distances between all atom pairs up to r max + 1 Å are sorted into histograms of width 'bin width', one per element pair, and weighted with bᵢbⱼ/⟨b⟩², which gives the weighted radial distribution function R(r) of Peterson et al. (2021), eq. 15 (X-ray scattering lengths b = Z·rₑ). All functions are normalised per atom, so the result does not depend on the cell setting in the CIF. Partly occupied sites contribute with the product of both occupancies.&#10;Only these two settings need a recalculation; everything in box 3 is applied instantly."></i></h2>
+      <h2><span class="num">2</span>Calculation <i class="info" data-tip="The distances between all atom pairs up to r max + 1 Å are sorted into histograms of width 'bin width', one per element pair, and weighted with bᵢbⱼ/⟨b⟩², which gives the weighted radial distribution function R(r) of Peterson et al. (2021), eq. 15 (X-ray scattering lengths b = Z·rₑ); the neutron functions are derived from them with the neutron weights. All functions are normalised per atom, so the result does not depend on the cell setting in the CIF. Partly occupied sites contribute with the product of both occupancies.&#10;Only these two settings need a recalculation; everything in box 3 is applied instantly."></i></h2>
       <div class="settings">
         <span class="sl">r max</span>
         <span class="sv"><input type="number" id="rMax" value="20" min="1" max="100" step="1"> Å</span>
@@ -141,16 +141,20 @@
       <div class="row gap"><input type="number" id="rFrom" step="0.5" min="0"> – <input type="number" id="rTo" step="0.5" min="0"> Å
         <button class="small" id="resetRange">full</button></div>
 
-      <h3>Curves <i class="info" data-tip="Element–element partials (pairs with H are hidden at first), shown as their contributions to the total: the partial functions weighted with the Faber–Ziman weights W = cᵢcⱼbᵢbⱼ/⟨b⟩² (Peterson et al. 2021, eqs. 24, 26, 61 and 66), so they add up to the total. N(r) is not weighted by scattering lengths and is shown as total only. Click a name here or in the plot legend to hide or show it."></i>
+      <h3>Curves <i class="info" data-tip="Element–element partials (for X-rays, pairs with H are hidden at first; for neutrons, which H scatters strongly, they are shown), shown as their contributions to the total: the partial functions weighted with the Faber–Ziman weights W = cᵢcⱼbᵢbⱼ/⟨b⟩² (Peterson et al. 2021, eqs. 24, 26, 61 and 66), so they add up to the total. N(r) is not weighted by scattering lengths and is shown as total only. Click a name here or in the plot legend to hide or show it."></i>
         <span class="sep"></span><button class="small" id="curvesAll">all</button><button class="small" id="curvesNone">none</button></h3>
       <div id="curveList" class="muted">–</div>
-      <h3>Highlighting <i class="info" data-tip="Left-click the plot to highlight the atom–atom distances of the region around that r in the 3D viewer; the highlighting stays while you turn the structure. Click into the highlighted region or press Esc to remove it.&#10;Region: r ± the half-width below (for the histogram: the bins whose centres lie in it).&#10;Every distance is given with its share of the area under the X-ray weighted pair density R(r) in the region. R(r) is never negative, so the shares add up to 100 % in every convention. Distances below the minimum share are not highlighted (at most 8 are). Colours are colour-blind safe; the stronger a distance, the brighter its colour. With neutrons, contributions of pairs with a negative product of scattering lengths are negative: the shares then refer to the area under |R(r)| of all pairs and such distances are marked 'negative'."></i>
+      <h3>Highlighting <i class="info" data-tip="Left-click the plot to highlight the atom–atom distances of the region around that r in the 3D viewer; the highlighting stays while you turn the structure. Click into the highlighted region or press Esc to remove it.&#10;Region: r ± the half-width below (for the histogram: the bins whose centres lie in it).&#10;Every distance is given with its share of the area under the X-ray weighted pair density R(r) in the region. R(r) is never negative, so the shares add up to 100 % in every convention. Distances below the minimum share are not highlighted (at most 8 are). Rod thickness: radius of the highlighted pairs. Other atoms: opacity of the rest of the structure while distances are highlighted (far left: hidden). Colours are colour-blind safe; the stronger a distance, the brighter its colour. With neutrons, contributions of pairs with a negative product of scattering lengths are negative: the shares then refer to the area under |R(r)| of all pairs and such distances are marked 'negative'."></i>
         <span class="sep"></span><button class="small" id="hlClear">clear</button></h3>
       <div class="settings">
         <span class="sl">region</span>
         <span class="sv">r ± <input type="number" id="hlWidth" value="0.1" min="0.005" max="5" step="0.05"> Å</span>
         <span class="sl">min. share</span>
         <span class="sv"><input type="number" id="hlMin" value="10" min="0" max="100" step="1"> % of the R(r) area</span>
+        <span class="sl">rod thickness</span>
+        <span class="sv"><input type="range" id="hlRod" min="0.05" max="0.6" step="0.01" value="0.2"> <span id="hlRodVal" class="val"></span></span>
+        <span class="sl">other atoms</span>
+        <span class="sv"><input type="range" id="hlDim" min="0" max="1" step="0.02" value="0.38"> <span id="hlDimVal" class="val"></span></span>
       </div>
 
     </section>

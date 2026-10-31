@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const $ = (id) => document.getElementById(id);
 // opened structures; every entry keeps its CIF text, structure and calculated histograms
 const S = {
-  entries: [], active: null, conv: 'G', rad: 'xray', sigma: 0.1, showHist: false, hl: null, hlWidth: 0.1, hlMin: 0.1, dragMode: 'zoom', seen: new Set(),
+  entries: [], active: null, conv: 'G', rad: 'xray', sigma: 0.1, showHist: false, hl: null, hlWidth: 0.1, hlMin: 0.1, hlRod: 0.2, hlDim: 0.38, dragMode: 'zoom', seen: new Set(),
   hiddenBy: { xray: new Set(), neutron: new Set() },
   showRef: false, xr: null, sc: [1, 1, 1],
 };
@@ -277,7 +277,7 @@ function broaden(r0, dr, y, xs, sigma) {
 function computeCurves(entry, conv, rad) {
   const pdf = entry.pdf;
   const { r, curves } = transform(pdf, conv, rad);
-  // both layers are always calculated, so the tickboxes only change what is drawn
+  // both layers are always calculated, so the 'show' choice only changes what is drawn
   const n = r.findIndex((v) => v > pdf.r_max);
   const hx = r.slice(0, n < 0 ? r.length : n);
   const hist = curves.map((c) => ({ ...c, y: c.y.slice(0, hx.length) }));
@@ -699,6 +699,18 @@ $('hlMin').onchange = () => {
   if (S.hl) updateHighlight();
 };
 $('hlClear').onclick = () => clearHighlight();
+// appearance of the highlighting: rod thickness and visibility of the other atoms
+function showHlLook() {
+  $('hlRodVal').textContent = `${S.hlRod.toFixed(2)} Å`;
+  $('hlDimVal').textContent = S.hlDim > 0 ? `${Math.round(S.hlDim * 100)} %` : 'hidden';
+}
+$('hlRod').oninput = () => {
+  S.hlRod = +$('hlRod').value;
+  showHlLook();
+  if (S.hl) { hlKey = ''; updateHighlight(); }
+};
+$('hlDim').oninput = () => { S.hlDim = +$('hlDim').value; showHlLook(); applyDim(); };
+showHlLook();
 
 function renderCurveList() {
   const list = $('curveList');
@@ -857,13 +869,14 @@ function renderCompass() {
 const sphereGeo = new THREE.SphereGeometry(1, 20, 14);
 const cylGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1);
 const solidMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05 });
-// partly occupied sites are translucent
+// bonds to partly occupied sites are translucent
 const partialMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05, transparent: true, opacity: 0.45, depthWrite: false });
-// Atoms: the coloured part of a sphere shows the occupancy of its site. It is a cap from the bottom
-// up to the height h = occupancy (h from 0 to 1 over the sphere); a cap's share of the surface grows
-// linearly with its height (Archimedes), so the coloured area fraction equals the occupancy. On
-// mixed sites the second element follows as a band in its own colour. The empty rest is a
-// dithered see-through shell (screen-door: every other pixel discarded), which needs no sorting.
+// Atoms: the occupancy of a site is shown like a cake. The sphere is coloured over the angle
+// around the vertical axis up to occupancy x 360°; the sphere's area is spread evenly over that
+// angle, so the coloured fraction of the surface equals the occupancy. On mixed sites the second
+// element follows as a slice in its own colour. The empty slice is cut out, and two half-disc
+// walls (wallMat, drawn only for partly occupied sites) close the cut.
+const TAU = 6.283185307179586;
 const atomMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05 });
 atomMat.onBeforeCompile = (shader) => {
   shader.vertexShader = shader.vertexShader
@@ -871,27 +884,62 @@ atomMat.onBeforeCompile = (shader) => {
 attribute float occA;
 attribute float occT;
 attribute vec3 colB;
-varying float vH;
+varying vec3 vLocal;
 varying float vOccA;
 varying float vOccT;
 varying vec3 vColB;`)
     .replace('#include <begin_vertex>', `#include <begin_vertex>
-vH = position.y * 0.5 + 0.5;
+vLocal = position;
 vOccA = occA; vOccT = occT; vColB = colB;`);
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>
-varying float vH;
+varying vec3 vLocal;
 varying float vOccA;
 varying float vOccT;
 varying vec3 vColB;`)
     .replace('#include <color_fragment>', `#include <color_fragment>
-if (vH > vOccT) {
-  if (mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0) discard;
-  diffuseColor.rgb = vec3(0.62);
-} else if (vH > vOccA) {
-  diffuseColor.rgb = vColB;
-}`);
+float turn = fract(atan(vLocal.z, vLocal.x) / ${TAU} + 1.0);
+if (turn >= vOccT) discard;
+if (turn >= vOccA) diffuseColor.rgb = vColB;`);
 };
+// the two walls of the cut: a half disc (x >= 0 in the xy plane) turned about the vertical axis
+// to the angle 0 (wall 0) or occupancy x 360° (wall 1); a slightly darker 'inside' colour
+const wallMat = new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.0, side: THREE.DoubleSide });
+wallMat.onBeforeCompile = (shader) => {
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>
+attribute float wall;
+attribute float occT;
+attribute vec3 colB;
+varying float vWall;
+varying vec3 vColB;
+float wallAngle;`)
+    .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+wallAngle = wall > 0.5 ? occT * ${TAU} : 0.0;
+objectNormal = vec3(-sin(wallAngle), 0.0, cos(wallAngle));`)
+    .replace('#include <begin_vertex>', `#include <begin_vertex>
+transformed = vec3(position.x * cos(wallAngle), position.y, position.x * sin(wallAngle));
+vWall = wall; vColB = colB;`);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+varying float vWall;
+varying vec3 vColB;`)
+    .replace('#include <color_fragment>', `#include <color_fragment>
+if (vWall > 0.5) diffuseColor.rgb = vColB;
+diffuseColor.rgb *= 0.8;`);
+};
+// geometry of the walls: two copies of a half disc, marked by the attribute 'wall'
+const wallGeo = (() => {
+  const half = new THREE.CircleGeometry(1, 24, -Math.PI / 2, Math.PI);
+  const pos = half.attributes.position.array, idx = half.index.array, n = pos.length / 3;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([...pos, ...pos]), 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(6 * n).fill(0), 3));
+  geo.setAttribute('wall', new THREE.BufferAttribute(new Float32Array(2 * n).fill(1, n), 1));
+  geo.setIndex([...idx, ...Array.from(idx, (i) => i + n)]);
+  half.dispose();
+  return geo;
+})();
 let meshes = [], cellLines = null;
 const MAX_ATOMS = 40000;
 
@@ -917,7 +965,7 @@ function instanced(geo, mat, items, place) {
 
 function buildScene() {
   highlightDistances([]);
-  meshes.forEach((m) => { root.remove(m); if (m.userData.atoms) m.geometry.dispose(); m.dispose(); });
+  meshes.forEach((m) => { root.remove(m); if (m.userData.atoms || m.userData.ownGeometry) m.geometry.dispose(); m.dispose(); });
   meshes = [];
   if (cellLines) { root.remove(cellLines); cellLines.geometry.dispose(); cellLines = null; }
   requestRender();
@@ -980,13 +1028,21 @@ function buildScene() {
       occT[k] = Math.min(1, parts.reduce((sum, p) => sum + p[1], 0));
       _c.set(parts[1] ? parts[1][2] : parts[0][2]);
       colB.set([_c.r, _c.g, _c.b], 3 * k);
-      if (occT[k] > 0.995) occT[k] = 1.01;     // fully occupied: no empty shell
+      if (occT[k] > 0.995) occT[k] = 1.01;     // fully occupied: nothing cut out
       if (!parts[1] && occA[k] > 0.995) occA[k] = 1.01;
     });
     atomMesh.geometry.setAttribute('occA', new THREE.InstancedBufferAttribute(occA, 1));
     atomMesh.geometry.setAttribute('occT', new THREE.InstancedBufferAttribute(occT, 1));
     atomMesh.geometry.setAttribute('colB', new THREE.InstancedBufferAttribute(colB, 3));
     atomMesh.userData.atoms = true;
+    // walls of the cut for the partly occupied sites (own geometry copy for the attributes)
+    const cut = atoms.map((it, k) => k).filter((k) => occT[k] < 1);
+    const wallMesh = instanced(wallGeo.clone(), wallMat, cut.map((k) => atoms[k]), placeAtom);
+    if (wallMesh) {
+      wallMesh.geometry.setAttribute('occT', new THREE.InstancedBufferAttribute(Float32Array.from(cut, (k) => occT[k]), 1));
+      wallMesh.geometry.setAttribute('colB', new THREE.InstancedBufferAttribute(Float32Array.from(cut.flatMap((k) => [...colB.subarray(3 * k, 3 * k + 3)])), 3));
+      wallMesh.userData.ownGeometry = true;
+    }
   }
   instanced(cylGeo, solidMat, bonds.filter((b) => !b.partial), placeBond);
   instanced(cylGeo, partialMat, bonds.filter((b) => b.partial), placeBond);
@@ -1018,7 +1074,7 @@ function renderLegend() {
   e.st.atoms.forEach((a) => (a.parts || [[a.el, a.occ, a.color]]).forEach(([el, , color]) => { if (!seen.has(el)) seen.set(el, color); }));
   let html = [...seen].map(([el, c]) => `<i style="background:${c}"></i>${esc(el)}`).join('');
   if (e.st.atoms.some((a) => a.occ < 0.99 || (a.parts && a.parts.length > 1)))
-    html += '<i class="occ"></i>partly occupied (coloured part = occupancy)';
+    html += '<i class="occ"></i>partly occupied (coloured slice = occupancy)';
   $('legend').innerHTML = html;
 }
 
@@ -1203,8 +1259,19 @@ async function updateHighlight() {
 
 let hlGroup = null, hlKey = '';
 const MAX_HIGHLIGHT_PAIRS = 10000;
-const HL_ROD_RADIUS = 0.2;      // Å, highlighted atom pairs
-const DIM_OPACITY = 0.38;        // the rest of the structure while distances are highlighted
+// rod radius of the highlighted pairs (S.hlRod, Å) and opacity of the rest of the structure while
+// distances are highlighted (S.hlDim, 0: hidden) are set in box 3
+let dimmed = false;
+function applyDim() {
+  const op = dimmed ? S.hlDim : 1;
+  [solidMat, atomMat, wallMat].forEach((m) => {
+    m.transparent = op < 1; m.opacity = op; m.depthWrite = op >= 1; m.visible = op > 0; m.needsUpdate = true;
+  });
+  partialMat.opacity = dimmed ? S.hlDim * 0.6 : 0.45;
+  partialMat.visible = op > 0;
+  partialMat.needsUpdate = true;
+  requestRender();
+}
 function inverse3(m) {
   const [[a, b, c], [d, e, f], [g, h, i]] = m;
   const A = e * i - f * h, B = f * g - d * i, C = d * h - e * g, det = a * A + b * B + c * C;
@@ -1252,10 +1319,9 @@ function highlightDistances(types, info) {
     hlGroup = null;
   }
   const on = types.length > 0 && !!S.active;
-  // dim everything else
-  [solidMat, atomMat].forEach((m) => { m.transparent = on; m.opacity = on ? DIM_OPACITY : 1; m.depthWrite = !on; m.needsUpdate = true; });
-  partialMat.opacity = on ? DIM_OPACITY * 0.6 : 0.45;
-  partialMat.needsUpdate = true;
+  // dim (or hide) everything else
+  dimmed = on;
+  applyDim();
   $('hlLegend').hidden = !info;
   requestRender();
   if (!info) return;
@@ -1293,7 +1359,7 @@ function highlightDistances(types, info) {
   const glow = (mat, v) => { mat.emissive = new THREE.Color(0xffffff); mat.emissiveIntensity = v; return mat; };
   const bondMesh = new THREE.InstancedMesh(cylGeo, glow(new THREE.MeshStandardMaterial({ roughness: 0.4 }), 0.12), Math.max(bonds.length, 1));
   bonds.forEach((b, k) => {
-    placeCylinder(_dummy, b.a, b.b, HL_ROD_RADIUS);
+    placeCylinder(_dummy, b.a, b.b, S.hlRod);
     _dummy.updateMatrix();
     bondMesh.setMatrixAt(k, _dummy.matrix);
     bondMesh.setColorAt(k, _c.set(b.color));

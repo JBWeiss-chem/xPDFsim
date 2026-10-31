@@ -5,7 +5,7 @@ Introduction
 ***********************************
 Various pair distribution functions
 ***********************************
-There is a plethora of different pair distribution functions and various definitions. In this code, the definitions, names and units of Peterson *et al.* :sup:`1` are used, including the corrections of Peterson and Keen. :sup:`2` These build on the relations established by Keen. :sup:`3` xPDFsim calculates X-ray and neutron PDFs. For neutrons, :math:`b_i` is the coherent scattering length of element :math:`i` (*Neutron Data Booklet*, Sears' values, as tabulated in pymatgen). For X-rays, it is approximated by the X-ray scattering length at :math:`Q = 0`, :math:`b_i = Z_i r_\mathrm{e}`, with the atomic number :math:`Z_i` and the classical electron radius :math:`r_\mathrm{e}`; the :math:`Q` dependence of the atomic form factors is neglected. The radiation is chosen with the option ``--radiation`` (``xray`` or ``neutron``). Some elements, e.g. H, Ti and Mn, have negative neutron scattering lengths, so neutron partials can be negative.
+There is a plethora of different pair distribution functions and various definitions. In this code, the definitions, names and units of Peterson *et al.* :sup:`1` are used, including the corrections of Peterson and Keen. :sup:`2` These build on the relations established by Keen. :sup:`3` xPDFsim calculates X-ray and neutron PDFs. For neutrons, :math:`b_i` is the coherent scattering length of element :math:`i` (*Neutron Data Booklet*, 2nd ed., 2003, with Sears' values). For X-rays, it is approximated by the X-ray scattering length at :math:`Q = 0`, :math:`b_i = Z_i r_\mathrm{e}`, with the atomic number :math:`Z_i` and the classical electron radius :math:`r_\mathrm{e}`; the :math:`Q` dependence of the atomic form factors is neglected. The radiation is chosen with the option ``--radiation`` (``xray`` or ``neutron``) or in the PDF options of the graphical user interface. Some elements, e.g. H, Ti and Mn, have negative neutron scattering lengths, so neutron partials can be negative.
 
 All functions are calculated from the weighted radial distribution function (eq. 15 of Peterson *et al.*):
 
@@ -87,7 +87,7 @@ where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance 
 
    Computed g(r) function of NaCl.
 
-Following Peterson *et al.*, :math:`g(r)` and :math:`G(r)` are the recommended functions: :math:`g(r)` is bounded by 0 and 1 and emphasises low-r features, while the oscillations of :math:`G(r)` have the same weight at all distances. :math:`g(r)` is the default function of xPDFsim.
+Following Peterson *et al.*, :math:`g(r)` and :math:`G(r)` are the recommended functions: :math:`g(r)` is bounded by 0 and 1 and emphasises low-r features, while the oscillations of :math:`G(r)` have the same weight at all distances. :math:`g(r)` is the default function of the command line tool; the graphical user interface starts with :math:`G(r)`.
 
 .. figure:: NaCl_G_r-2.png
    :scale: 20 %
@@ -105,6 +105,13 @@ Every function except :math:`N(r)` is written out with its element-element parti
   W_{ij} = c_i c_j \frac{b_i b_j}{\langle b \rangle^2}, \qquad \sum_{i,j} W_{ij} = 1,
 
 so that the partials add up to the total, for example :math:`G(r) = \sum_{i,j} W_{ij} G_{ij}(r)` (eq. 66). The weights of the two orders of an unlike pair (e.g. Na-Cl and Cl-Na) are combined into one partial.
+
+*************
+Structures
+*************
+xPDFsim reads structures from cif files with its own reader. Every data block with atom sites is one structure. The atoms of the asymmetric unit are expanded with the symmetry operations given in the file (``_space_group_symop_operation_xyz`` or ``_symmetry_equiv_pos_as_xyz``); copies that coincide (within 0.01 Å) on special positions are merged. Atoms of different labels on the same position form one site: their occupancies are added per element, which describes mixed sites (e.g. Fe/Ni) and split sites. All parts of disordered structures are kept with their occupancies, and the histograms are weighted with the product of the occupancies of both sites. Multi-line text fields are read as single values, so whole files that programs like Olex2 store in them (e.g. the refinement fcf file) do not interfere. If the atom sites do not match ``_chemical_formula_sum`` (e.g. missing H atoms), a warning is shown.
+
+All functions are normalised per atom, so they do not depend on the choice of the unit cell; the calculation uses the cell given in the file.
 
 *******
 Sources

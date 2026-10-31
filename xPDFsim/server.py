@@ -1,9 +1,12 @@
 """Graphical user interface: JSON API + static three.js front end.
 
-Start it with ``xPDFsim-gui`` (or ``python -m xPDFsim.server``). The server is
-stateless: the browser keeps the CIF text and sends it again whenever a PDF
-has to be recalculated. The R(r) histograms are calculated here; switching
-the PDF convention, broadening and plotting happen in the browser.
+Start it with ``xPDFsim-gui`` (or ``python -m xPDFsim.server``); the command
+line tool ``xPDFsim`` also uses it to show its result (see PRELOAD). The server
+is stateless: the browser keeps the CIF text and sends it again whenever a PDF
+or the list of distances has to be calculated. The X-ray weighted R(r)
+histograms are calculated here, together with the X-ray and neutron pair
+weights; switching the PDF convention and radiation, broadening and plotting
+happen in the browser.
 """
 
 import argparse
@@ -136,7 +139,7 @@ def pdf_payload(structure, r_max, dr):
 
 
 def distance_types(structure, r_max):
-    """Groups all atom pairs up to r_max into distance types for the hover highlighting.
+    """Groups all atom pairs up to r_max into distance types for highlighting them in the viewer.
 
     Pairs of the same two site labels at the same distance (to 0.001 Å) are
     symmetry equivalent and form one type, represented by one of its pairs.
@@ -234,7 +237,7 @@ def api_pdf(body):
 
 
 def api_distances(body):
-    """Distance types of one structure of a CIF file for the hover highlighting."""
+    """Distance types of one structure of a CIF file, for highlighting distances in the viewer."""
     structures, _ = read_cif(str(body.get("text", "")))
     block = int(body.get("block", 0))
     if not 0 <= block < len(structures):
