@@ -122,19 +122,30 @@ var { font-style: italic; }
 #center { display: grid; grid-template-rows: 1fr 6px var(--pdf-h); min-width: 0; min-height: 0; }
 #viewerWrap { position: relative; min-width: 0; min-height: 120px; background: var(--viewer); }
 #viewer { position: absolute; inset: 0; }
-#toolbar { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 10px;
-  align-items: center; background: rgba(255,255,255,.88); padding: 5px 10px; border-radius: 8px; font-size: 12px; }
+/* slim toolbar flush with the top of the viewer */
+#toolbar { position: absolute; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; gap: 4px 10px;
+  align-items: center; background: rgba(255,255,255,.88); padding: 4px 8px; border-radius: 0 0 8px 8px; font-size: 12px; }
 #toolbar .sep { flex: 1; }
 #toolbar .views { display: inline-flex; gap: 4px; flex: none; }
 label.sc { display: inline-flex; align-items: center; gap: 4px; }
+/* drop-down menu with the display options */
+details.menu { position: relative; }
+details.menu summary { cursor: pointer; list-style: none; padding: 1px 8px; border: 1px solid #cfd5de; border-radius: 6px;
+  background: #eef1f5; user-select: none; }
+details.menu summary::-webkit-details-marker { display: none; }
+details.menu summary::after { content: " ▾"; font-size: 10px; }
+details.menu[open] summary { background: #e3e8ef; }
+details.menu .menu-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; display: flex; flex-direction: column;
+  gap: 3px; padding: 7px 10px; background: #fff; border: 1px solid #d9dde4; border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18); white-space: nowrap; }
 label.sc input[type=number] { width: 38px; }
 #scInfo { font-size: 11px; }
 #scInfo .err { color: #b3261e; }
-/* right-hand column: highlighting legend (top), element legend (above the compass), compass (bottom) */
-#legend { position: absolute; right: 8px; bottom: 144px; background: rgba(255,255,255,.9); border-radius: 8px;
-  padding: 6px 11px; font-size: 13px; line-height: 1.6; max-width: min(260px, 40%); }
+/* right edge: highlighting legend at the top; element legend and compass side by side at the bottom */
+#legend { position: absolute; right: 122px; bottom: 8px; background: rgba(255,255,255,.9); border-radius: 8px;
+  padding: 4px 10px; font-size: 12px; line-height: 1.6; max-width: calc(100% - 140px); }
 #legend:empty { display: none; }
-#hlLegend { position: absolute; right: 8px; top: 52px; max-width: min(360px, 50%); background: rgba(20,24,32,.9); color: #f3f5f8; border-radius: 8px;
+#hlLegend { position: absolute; right: 8px; top: 40px; max-width: min(360px, 50%); max-height: calc(100% - 170px); overflow: hidden; background: rgba(20,24,32,.9); color: #f3f5f8; border-radius: 8px;
   padding: 6px 10px; font-size: 12px; line-height: 1.6; pointer-events: none; font-variant-numeric: tabular-nums; }
 #hlLegend i { display: inline-block; width: 18px; height: 5px; border-radius: 2px; margin-right: 7px; vertical-align: 2px; }
 #hlLegend span { color: #aab2c0; }
@@ -142,6 +153,7 @@ label.sc input[type=number] { width: 38px; }
 #hlLegend .neg { color: #ff9e7a; }
 #legend i { display: inline-block; width: 13px; height: 13px; border-radius: 50%; margin: 0 4px 0 10px; vertical-align: -2px; }
 #legend i:first-child { margin-left: 0; }
+#legend span i.occ { margin-left: 10px; }
 #legend i.occ { background: conic-gradient(from 90deg, #8a93a3 0 75%, #dde1e7 0); border: 1px solid #8a93a3; box-sizing: border-box; }
 #tooltip { position: absolute; pointer-events: none; background: rgba(20,24,32,.9); color: #fff; padding: 3px 7px;
   border-radius: 5px; font-size: 12px; white-space: nowrap; }

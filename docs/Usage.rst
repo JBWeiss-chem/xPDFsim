@@ -80,12 +80,10 @@ Open one or more cif files with the *Open CIF…* button or drop them anywhere o
 
 3D viewer
 =========
-Drag to turn the structure, use the mouse wheel to zoom and the right mouse button to move it; *a*, *b* and *c* look along the lattice vectors, *PNG* saves the picture. The legends of the elements and of highlighted distances and the axis compass are shown at the right edge; the structure is shifted to the left so that they do not cover it. Hovering an atom shows its label, elements and occupancies. The toolbar sets:
+Drag to turn the structure, use the mouse wheel to zoom and the right mouse button to move it; *a*, *b* and *c* look along the lattice vectors, *PNG* saves the picture. The legend of highlighted distances is shown at the top right, the legend of the elements and the axis compass at the bottom right; the structure is shifted so that they do not cover it. Hovering an atom shows its label, elements and occupancies. The toolbar sets:
 
 * **Cells**: the number of unit cells shown along a, b and c (one cell when a structure is loaded). *≈ cube* picks repeats that give a roughly cubic box, *≈ r max* a box about as thick as the maximum distance of the PDF in every direction. At most 40 000 atoms are drawn.
-* **H atoms**, **bonds** and **unit cell**: show or hide them. In a supercell, the edges of the original unit cell are drawn stronger than the outline of the supercell. Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds.
-* **boundary atoms**: also draw the bonded atoms just outside the cells, so that every bond ends at an atom.
-* **white**: white instead of dark background.
+* **show**: a menu to show or hide H atoms, bonds and the edges of the unit cell (in a supercell, those of the original unit cell), to draw *boundary atoms* (the bonded atoms just outside the cells, so that every bond ends at an atom) and to use a white instead of a dark background. Bonds are drawn between atoms closer than the sum of their covalent radii + 0.45 Å; in structures with nonmetals, metal–metal contacts are not drawn as bonds.
 
 .. figure:: gui_viewer.png
    :width: 80 %

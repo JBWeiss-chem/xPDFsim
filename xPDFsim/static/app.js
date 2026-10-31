@@ -867,16 +867,18 @@ new ResizeObserver(() => {
 // The legends and the compass sit in a column at the right edge of the viewer; the picture is
 // shifted left by half the width of that column (camera view offset), so the structure is centred
 // in the free area. Picking with the mouse uses the same projection and stays correct.
-const COMPASS_SIZE = 130;
+const COMPASS_SIZE = 110;
 function updateViewOffset() {
   const w = viewer.clientWidth, h = Math.max(viewer.clientHeight, 1);
+  // left by half the width of the right column (compass, highlighting legend), down by half the
+  // height of the toolbar, so the structure is centred in the free area
   let column = 0;
   if (S.active) {
     column = COMPASS_SIZE + 12;
-    [$('legend'), $('hlLegend')].forEach((el) => { if (!el.hidden && el.innerHTML) column = Math.max(column, el.offsetWidth + 16); });
+    if (!$('hlLegend').hidden && $('hlLegend').innerHTML) column = Math.max(column, $('hlLegend').offsetWidth + 16);
   }
-  const shift = Math.min(column / 2, w / 4);
-  camera.setViewOffset(w, h, shift, 0, w, h);
+  const shiftX = Math.min(column / 2, w / 4), shiftY = $('toolbar').offsetHeight / 2;
+  camera.setViewOffset(w, h, shiftX, -shiftY, w, h);
   requestRender();
 }
 
@@ -907,7 +909,7 @@ function setBackground() {
   $('viewerWrap').style.background = white ? '#ffffff' : 'var(--viewer)';
   axArrows.forEach((a) => a.setColor(ink));
   axLabels.forEach((sp, i) => { sp.material.map?.dispose(); sp.material.map = labelTexture('abc'[i], ink); sp.material.needsUpdate = true; });
-  cellLines.forEach((l, k) => l.material.color.set(CELL_COLORS[white ? 'white' : 'dark'][k]));
+  cellLines.forEach((l) => l.material.color.set(CELL_COLORS[white ? 'white' : 'dark']));
   requestRender();
 }
 function renderCompass() {
@@ -964,8 +966,8 @@ if (turn >= vOccT) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), ${UNOCCUP
 else if (turn >= vOccA) diffuseColor.rgb = vColB;`);
 };
 let meshes = [], cellLines = [];
-// edges of the cell (bright) and, for supercells, of the whole supercell (dim)
-const CELL_COLORS = { dark: ['#d3d9e3', '#5d6676'], white: ['#222831', '#a3aab6'] };
+// edges of the original unit cell (also in supercells)
+const CELL_COLORS = { dark: '#aeb7c6', white: '#3a414d' };
 const MAX_ATOMS = 40000;
 
 const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -1077,9 +1079,7 @@ function buildScene() {
       root.add(lines);
       cellLines.push(lines);
     };
-    const [unitColor, superColor] = CELL_COLORS[$('whiteBg').checked ? 'white' : 'dark'];
-    box([1, 1, 1], unitColor);
-    if (S.sc.some((n) => n > 1)) box(S.sc, superColor);
+    box([1, 1, 1], CELL_COLORS[$('whiteBg').checked ? 'white' : 'dark']);
   }
   L.forEach((v, i) => {
     const d = new THREE.Vector3(...v).normalize();
@@ -1097,7 +1097,7 @@ function renderLegend() {
   e.st.atoms.forEach((a) => (a.parts || [[a.el, a.occ, a.color]]).forEach(([el, , color]) => { if (!seen.has(el)) seen.set(el, color); }));
   let html = [...seen].map(([el, c]) => `<i style="background:${c}"></i>${esc(el)}`).join('');
   if (e.st.atoms.some((a) => a.occ < 0.99 || (a.parts && a.parts.length > 1)))
-    html += '<i class="occ"></i>partly occupied (coloured slice = occupancy, light = unoccupied)';
+    html += '<span title="Partly occupied sites: the slice in the atom\'s colour is the occupancy, the light rest is unoccupied"><i class="occ"></i>partly occupied</span>';
   $('legend').innerHTML = html;
   updateViewOffset();
 }
@@ -1173,6 +1173,8 @@ $('scRmax').onclick = () => { if (S.active) fitSupercell(S.active.pdf.r_max); };
 ['showBonds', 'showCell', 'boundaryAtoms'].forEach((id) => { $(id).onchange = buildScene; });
 $('showH').onchange = () => { buildScene(); showSupercell(); };
 $('whiteBg').onchange = setBackground;
+// the 'show' menu closes when clicking elsewhere
+document.addEventListener('click', (ev) => { if (!ev.target.closest('#showMenu')) $('showMenu').open = false; });
 $('savePng').onclick = () => {
   if (!S.active) return;
   // the picture without the shift for the legend column, i.e. with the structure centred

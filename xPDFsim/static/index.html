@@ -60,11 +60,16 @@
           <button class="small" id="scRmax" type="button" title="repeat counts that make the box about as thick as r max in every direction, so that all distances of the PDF fit into it">≈ r max</button>
           <span id="scInfo" class="muted"></span>
           <i class="info" data-tip="Number of unit cells shown along a, b and c (1–12 each). To keep the viewer responsive, at most 40 000 atoms are drawn; larger requests are refused. '≈ cube' picks repeat counts that give a roughly cubic box, useful for needle- or plate-shaped cells. '≈ r max' makes the box about as thick as r max of the PDF in every direction, so that all distances of the plot fit into it. Each structure keeps its own setting; new ones show one cell."></i></label>
-        <label><input type="checkbox" id="showH" checked> H atoms</label>
-        <label><input type="checkbox" id="showBonds" checked> bonds</label>
-        <label title="draw the bonded atoms just outside the cells, so that every bond ends at an atom"><input type="checkbox" id="boundaryAtoms" checked> boundary atoms</label>
-        <label><input type="checkbox" id="showCell" checked> unit cell</label>
-        <label><input type="checkbox" id="whiteBg"> white</label>
+        <details class="menu" id="showMenu">
+          <summary title="what is drawn in the viewer">show</summary>
+          <div class="menu-pop">
+            <label><input type="checkbox" id="showH" checked> H atoms</label>
+            <label><input type="checkbox" id="showBonds" checked> bonds</label>
+            <label title="draw the bonded atoms just outside the cells, so that every bond ends at an atom"><input type="checkbox" id="boundaryAtoms" checked> boundary atoms</label>
+            <label><input type="checkbox" id="showCell" checked> unit cell</label>
+            <label><input type="checkbox" id="whiteBg"> white background</label>
+          </div>
+        </details>
         <span class="sep"></span>
         <span class="views" title="view along a, b or c">
           <button class="small" data-view="a">a</button>
