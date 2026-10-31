@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xPDFsim"
-version = "0.0.3"
+version = "0.1.0"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE", "xPDFsim/static/vendor/three/LICENSE"]
 description = "Simulation of X-ray and neutron pair distribution functions from CIF files, with a browser GUI."
@@ -27,6 +27,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["xPDFsim*"]
 
 [tool.setuptools.package-data]
 # the web front end of the GUI, including the bundled three.js

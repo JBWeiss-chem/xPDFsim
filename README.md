@@ -3,6 +3,8 @@
 Simulation of X-ray and neutron pair distribution functions (PDFs) from CIF files, with an interactive
 graphical user interface in the browser. Read the documentation [here](https://xpdfsim.readthedocs.io/en/latest/).
 
+![The 3D viewer of xPDFsim with the Cu–O bonds of HKUST-1 highlighted](https://raw.githubusercontent.com/JBWeiss-chem/xPDFsim/main/docs/gui_viewer.png)
+
 ## Features
 
 - Built-in CIF reader (symmetry expansion, partial occupancies, mixed sites, several structures per file)

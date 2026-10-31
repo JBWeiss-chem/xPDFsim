@@ -16,10 +16,10 @@ All functions are calculated from the weighted radial distribution function (eq.
 where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance :math:`r_{\mu\nu}`, :math:`N` is the number of atoms in the unit cell and :math:`c_i` is the atomic fraction of element :math:`i`. In practice, the distances are sorted into histograms of width :math:`\mathrm{d}r` (option ``-b``), which are then broadened with Gaussians (option ``-s``).
 
 .. figure:: NaCl_R_r.png
-   :scale: 20 %
-   :align:  center
+   :width: 100 %
+   :align: center
 
-   Computed R(r) function of NaCl.
+   X-ray :math:`R(r)` of NaCl (COD 1000041) with its element–element partials and the asymptote :math:`4\pi\rho_0 r^2` (dashed), as shown by the graphical user interface.
 
 :math:`R(r)` is very intuitive, but it grows as :math:`4\pi\rho_0 r^2` (with the average number density :math:`\rho_0`), which makes it impractical for plotting. The other functions follow from it (Table 5 and Appendix A of Peterson *et al.*):
 
@@ -82,18 +82,18 @@ where the sum runs over all pairs of atoms :math:`\mu \neq \nu` at the distance 
      - atom
 
 .. figure:: NaCl_g_r.png
-   :scale: 20 %
-   :align:  center
+   :width: 100 %
+   :align: center
 
-   Computed g(r) function of NaCl.
+   X-ray :math:`g(r)` of NaCl with its partials; it tends to 1 (dashed) at high :math:`r`.
 
 Following Peterson *et al.*, :math:`g(r)` and :math:`G(r)` are the recommended functions: :math:`g(r)` is bounded by 0 and 1 and emphasises low-r features, while the oscillations of :math:`G(r)` have the same weight at all distances. :math:`g(r)` is the default function of the command line tool; the graphical user interface starts with :math:`G(r)`.
 
 .. figure:: NaCl_G_r-2.png
-   :scale: 20 %
-   :align:  center
+   :width: 100 %
+   :align: center
 
-   Computed G(r) function of NaCl.
+   X-ray :math:`G(r)` of NaCl with its partials and the asymptotes :math:`-4\pi\rho_0 r` below the first peak and 0 (dashed).
 
 :math:`N(r)` is the average number of atoms within the distance :math:`r` of an atom. It is calculated from the unweighted radial distribution function :math:`\mathrm{RDF}(r) = \frac{1}{N} \sum_{\mu\nu} \delta(r - r_{\mu\nu})` (eq. 14) and is therefore not weighted by scattering lengths.
 
