@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### New
+
+- Deuteration for the neutron functions: the percentage of D among the H atoms, in the GUI (box 3,
+  per structure, applied instantly) and on the command line (`--deuteration`). The default is the
+  natural abundance (0.015 %); the field is disabled for structures without hydrogen.
+
 ## 0.1.0
 
 ### New

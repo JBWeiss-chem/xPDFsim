@@ -15,7 +15,7 @@ the key "radii", one key per element pair (the partials) and "total".
 import itertools
 import numpy as np
 
-from .elements import ATOMIC_NUMBERS, NEUTRON_B
+from .elements import ATOMIC_NUMBERS, D_NATURAL, NEUTRON_B, hydrogen_b
 
 R_E = 2.8179403262      # classical electron radius in fm
 FM2_PER_BARN = 100.0
@@ -35,7 +35,7 @@ CONVENTIONS = {
 }
 
 
-def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray", r_extra=1.0):
+def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray", r_extra=1.0, deuteration=D_NATURAL):
     """Takes a Structure, calculates neighbor lists, transforms them
     into a histogram, and finally transforms them into the weighted radial
     distribution function R(r) [Peterson et al. (2021), eq. (15)].
@@ -48,6 +48,7 @@ def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray", r_extra=1.0):
         radiation (string): "xray" or "neutron", sets the scattering lengths.
         r_extra (float): The histograms go on to r_max + r_extra, so that
         broadening near r_max includes the peaks beyond it (about 6 sigma).
+        deuteration (float): Percentage of D among the H atoms (neutrons).
 
     Returns:
         dictionary: Table of the R(r) histograms. The partials are the
@@ -58,7 +59,7 @@ def gen_R_r(structure, r_max, dr, verbose=True, radiation="xray", r_extra=1.0):
     elements = list(structure.composition())
     total_atoms = structure.num_atoms()
     rho = total_atoms / structure.volume
-    weights, _ = pair_weights(structure, radiation)
+    weights, _ = pair_weights(structure, radiation, deuteration)
 
     # Histogram bins; calculated up to r_max + r_extra so that broadening near
     # r_max is not truncated
@@ -105,13 +106,15 @@ def pair_label(element_1, element_2):
     return "-".join(sorted([element_1, element_2]))
 
 
-def scattering_length(element, radiation):
+def scattering_length(element, radiation, deuteration=D_NATURAL):
     """Scattering length b of an element in fm.
 
     Args:
         element (string): Element symbol.
         radiation (string): "xray" (b = Z r_e) or "neutron" (coherent
         scattering length).
+        deuteration (float): Percentage of D among the H atoms, which sets the
+        neutron scattering length of H (sites given as D are always D).
 
     Returns:
         float: Scattering length in fm.
@@ -119,6 +122,8 @@ def scattering_length(element, radiation):
     if radiation == "xray":
         return ATOMIC_NUMBERS[element] * R_E
     if radiation == "neutron":
+        if element == "H":
+            return hydrogen_b(deuteration)
         try:
             return NEUTRON_B[element]
         except KeyError:
@@ -126,12 +131,13 @@ def scattering_length(element, radiation):
     raise ValueError(f"Unknown radiation {radiation}")
 
 
-def pair_weights(structure, radiation="xray"):
+def pair_weights(structure, radiation="xray", deuteration=D_NATURAL):
     """Weights of all element pairs for X-rays or neutrons.
 
     Args:
         structure (Structure): Structure of which the PDF shall be calculated.
         radiation (string): "xray" or "neutron".
+        deuteration (float): Percentage of D among the H atoms (neutrons).
 
     Returns:
         dictionary: For every pair label, "bb" = b_i b_j / <b_coh>^2 (the factor
@@ -148,7 +154,7 @@ def pair_weights(structure, radiation="xray"):
     total = sum(composition.values())
     fraction = {el: amount / total for el, amount in composition.items()}
     elements = list(composition)
-    b = {el: scattering_length(el, radiation) for el in elements}
+    b = {el: scattering_length(el, radiation, deuteration) for el in elements}
     mean_b = sum(fraction[el] * b[el] for el in elements)
     if abs(mean_b) < 1e-6:
         raise ValueError("The average scattering length is zero, so the normalised functions are not defined.")

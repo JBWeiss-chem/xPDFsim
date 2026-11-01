@@ -114,7 +114,7 @@ async function loadText(file, text, name = file.replace(/\.cif$/i, '')) {
     const r = await api('/api/load', { text, ...calcSettings() });
     const added = r.structures.map((s) => ({
       id: nextId++, file, text, block: s.block, name: r.structures.length > 1 ? s.name : name,
-      st: s.structure, pdf: s.pdf, warnings: r.warnings,
+      st: s.structure, pdf: s.pdf, warnings: r.warnings, deut: s.pdf.neutron.d_natural ?? D_NATURAL,
     }));
     S.entries.splice(S.entries.indexOf(placeholder), 1, ...added);
     activate(added[0]);
@@ -138,6 +138,7 @@ function activate(entry) {
     entry.sc = entry.sc || [1, 1, 1];
     S.sc = entry.sc;
   }
+  $('deut').value = entry ? entry.deut : D_NATURAL;
   showSupercell();
   // element pairs with hydrogen are hidden at first for X-rays, where H scatters weakly; for
   // neutrons, where H scatters strongly, they are shown
@@ -268,13 +269,29 @@ $('calc').onclick = async () => {
 // histograms -> chosen convention -> broadened curves on the display grid (and the histograms themselves)
 // weights of the chosen radiation. The histograms are calculated with X-ray weights; a neutron
 // partial is the X-ray one times the ratio of the bb factors (b_i b_j / <b>^2) of the pair.
-function radiationWeights(pdf, rad) {
+// The neutron weights are calculated here, as b of H depends on the deuteration of the structure
+// (percentage of D among the H atoms): linear from natural H (with its natural D content) to D.
+const D_NATURAL = 0.015;
+const hasHydrogen = (e) => !!(e && e.pdf.neutron.fraction && e.pdf.neutron.fraction.H > 0);
+function radiationWeights(entry, rad) {
+  const pdf = entry.pdf;
   if (rad !== 'neutron') return { weights: pdf.weights, mean_b2: pdf.mean_b2, scale: () => 1 };
   const n = pdf.neutron;
-  return { weights: n.weights, mean_b2: n.mean_b2, scale: (l) => n.weights[l].bb / pdf.weights[l].bb };
+  if (n.error) return { error: n.error };
+  const b = { ...n.b };
+  if ('H' in b) b.H = n.b.H + (entry.deut - n.d_natural) / (100 - n.d_natural) * (n.b_D - n.b.H);
+  const meanB = Object.entries(n.fraction).reduce((sum, [el, c]) => sum + c * b[el], 0);
+  if (Math.abs(meanB) < 1e-6) return { error: 'The average neutron scattering length of the structure is zero at this deuteration, so the normalised functions are not defined.' };
+  const weights = {};
+  Object.keys(pdf.weights).forEach((l) => {
+    const [e1, e2] = l.split('-');
+    const bb = b[e1] * b[e2] / (meanB * meanB);
+    weights[l] = { bb, W: (e1 === e2 ? 1 : 2) * n.fraction[e1] * n.fraction[e2] * bb };
+  });
+  return { weights, mean_b2: meanB * meanB / 100, meanB, bH: b.H || 0, scale: (l) => weights[l].bb / pdf.weights[l].bb };
 }
-function transform(pdf, conv, rad) {
-  const n = pdf.n, rho = pdf.rho;
+function transform(entry, conv, rad) {
+  const pdf = entry.pdf, n = pdf.n, rho = pdf.rho;
   const r = Float64Array.from({ length: n }, (_, k) => pdf.r0 + k * pdf.dr);
   const labels = Object.keys(pdf.partials);
   if (CONV[conv].totalOnly) {
@@ -285,7 +302,7 @@ function transform(pdf, conv, rad) {
     const N = rdf.map((y) => { sum += y; return (sum - y / 2) * pdf.dr; });
     return { r, curves: [{ label: 'total', color: INK, total: true, y: N }] };
   }
-  const { weights, mean_b2, scale } = radiationWeights(pdf, rad);
+  const { weights, mean_b2, scale } = radiationWeights(entry, rad);
   const partials = Object.fromEntries(labels.map((l) => [l, Float64Array.from(pdf.partials[l], (y) => y * scale(l))]));
   const total = new Float64Array(n);
   labels.forEach((l) => partials[l].forEach((y, k) => { total[k] += y; }));
@@ -313,7 +330,7 @@ function broaden(r0, dr, y, xs, sigma) {
 
 function computeCurves(entry, conv, rad) {
   const pdf = entry.pdf;
-  const { r, curves } = transform(pdf, conv, rad);
+  const { r, curves } = transform(entry, conv, rad);
   // both layers are always calculated, so the 'show' choice only changes what is drawn
   const n = r.findIndex((v) => v > pdf.r_max);
   const hx = r.slice(0, n < 0 ? r.length : n);
@@ -321,7 +338,7 @@ function computeCurves(entry, conv, rad) {
   const x = Float64Array.from({ length: Math.round(pdf.r_max / OUT_STEP) + 1 }, (_, i) => i * OUT_STEP);
   // only the peaks are broadened: the smooth term c(r)·W (e.g. −4πρ₀r of G(r)) would be bent
   // where the Gaussians are cut off, at r = 0 and at the end of the histograms
-  const mean_b2 = radiationWeights(pdf, rad).mean_b2;
+  const mean_b2 = radiationWeights(entry, rad).mean_b2;
   const terms = CONV[conv].terms;
   const base = (v, c) => (terms ? terms(v, pdf.rho, mean_b2)[1] * c.W : 0);
   const broad = curves.map((c) => {
@@ -342,13 +359,13 @@ let plot = null;           // geometry of the last drawn chart (for mouse intera
 
 function updatePdf(animate) {
   const e = S.active;
-  // neutron functions need tabulated scattering lengths for all elements
-  const nError = e && e.pdf.neutron && e.pdf.neutron.error;
+  // neutron functions need tabulated scattering lengths for all elements and ⟨b⟩ ≠ 0
+  const nError = e && radiationWeights(e, 'neutron').error;
   document.querySelectorAll('[data-rad="neutron"]').forEach((b) => { b.disabled = !!nError; b.title = nError || ''; });
   if (nError && S.rad === 'neutron') S.rad = 'xray';
   const cv = CONV[S.conv];
   const radNote = S.rad === 'neutron'
-    ? `neutron: <var>b</var> = coherent scattering length${e ? `, ⟨<var>b</var>⟩² = ${e.pdf.neutron.mean_b2.toPrecision(4)} barn` : ''}`
+    ? `neutron: <var>b</var> = coherent scattering length${hasHydrogen(e) ? ` (H with ${e.deut} % D)` : ''}${e ? `, ⟨<var>b</var>⟩² = ${radiationWeights(e, 'neutron').mean_b2.toPrecision(4)} barn` : ''}`
     : `X-ray: <var>b</var> = <var>Z</var>·<var>r</var><sub>e</sub> (<var>Q</var> = 0)${e ? `, ⟨<var>b</var>⟩² = ${e.pdf.mean_b2.toPrecision(4)} barn` : ''}`;
   $('formula').innerHTML = `${cv.formula}<br><span class="note">${cv.note}; ${cv.eq}${cv.unit ? `; unit: ${cv.unit}` : ''}<br>${radNote}</span>`;
   document.querySelectorAll('[data-conv]').forEach((b) => b.classList.toggle('on', b.dataset.conv === S.conv && b.dataset.rad === S.rad));
@@ -716,6 +733,15 @@ function setSigma(v) {
   updatePdf(false);
   if (S.hl) updateHighlight();
 }
+// deuteration of the active structure (neutrons), applied instantly
+$('deut').onchange = () => {
+  const e = S.active, v = +$('deut').value;
+  if (!e) return;
+  if ($('deut').value === '' || !(v >= 0 && v <= 100)) { $('deut').value = e.deut; return; }
+  e.deut = v;
+  updatePdf(S.rad === 'neutron');
+  if (S.hl && S.rad === 'neutron') updateHighlight();
+};
 $('sigmaRange').oninput = () => setSigma(+$('sigmaRange').value);
 $('sigma').onchange = () => setSigma(+$('sigma').value);
 // broadened function and histogram are exclusive (two radio buttons)
@@ -799,7 +825,10 @@ function baseName() {
   const file = e.file.replace(/\.cif$/i, '');
   return (e.name === file ? file : `${file}_${e.name}`).replace(/[^\w.-]+/g, '_');
 }
-function fileKey() { return `${CONV[current.conv].file}${current.rad === 'neutron' ? '_neutron' : ''}`; }
+function fileKey() {
+  const e = S.active, deut = current.rad === 'neutron' && hasHydrogen(e) && e.deut !== D_NATURAL ? `_D${e.deut}` : '';
+  return `${CONV[current.conv].file}${current.rad === 'neutron' ? '_neutron' : ''}${deut}`;
+}
 function download(blob, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name; a.click();
@@ -1253,16 +1282,19 @@ function dominantDistances(a, b) {
   // neutron partials can be negative (negative scattering lengths): the shares then refer to
   // the area under |R(r)| summed over the pairs, and the sign of each contribution is shown
   const pdf = e.pdf, neutron = S.rad === 'neutron';
-  const W = neutron ? D.wn : D.w, norm = neutron ? D.norm_n : D.norm;
-  if (!W || !norm) return { types: [], others: 0 };
+  // the neutron weight of a type depends on b of H: w = wn0 + wn1·b_H + wn2·b_H²
+  const rw = radiationWeights(e, S.rad);
+  if (rw.error || (neutron && !D.wn0)) return { types: [], others: 0 };
+  const W = neutron ? D.wn0.map((w0, k) => w0 + D.wn1[k] * rw.bH + D.wn2[k] * rw.bH * rw.bH) : D.w;
+  const norm = neutron ? 2 / (pdf.n_atoms * rw.meanB * rw.meanB) : D.norm;
+  const key = neutron ? `neutron/${e.deut}` : S.rad;
   e.Rtot = e.Rtot || {};
-  if (!e.Rtot[S.rad]) {
-    const { scale } = radiationWeights(pdf, S.rad);
+  if (!e.Rtot[key]) {
     const sum = new Float64Array(pdf.n);
-    Object.entries(pdf.partials).forEach(([l, y]) => { const f = Math.abs(scale(l)); y.forEach((v, k) => { sum[k] += v * f; }); });
-    e.Rtot[S.rad] = sum;
+    Object.entries(pdf.partials).forEach(([l, y]) => { const f = Math.abs(rw.scale(l)); y.forEach((v, k) => { sum[k] += v * f; }); });
+    e.Rtot[key] = sum;
   }
-  const Rabs = e.Rtot[S.rad];
+  const Rabs = e.Rtot[key];
   const reach = S.showHist ? 0 : 6 * S.sigma;
   let total = 0;
   const k0 = Math.max(0, Math.floor((a - reach - pdf.r0) / pdf.dr)), k1 = Math.min(pdf.n - 1, Math.ceil((b + reach - pdf.r0) / pdf.dr));
@@ -1586,6 +1618,8 @@ function updateControlStates() {
   setEnabled('resetZoom', has && !!S.xr);
   setEnabled('resetRange', has && !!S.xr);
   // options
+  setEnabled('deut', hasHydrogen(e) && !e.pdf.neutron.error);
+  $('deut').title = e && !hasHydrogen(e) ? 'The structure contains no hydrogen.' : '';
   setEnabled('sigma', !S.showHist);
   setEnabled('sigmaRange', !S.showHist);
   const labels = e ? partialLabels() : [], totalOnly = !!CONV[S.conv].totalOnly;
@@ -1612,6 +1646,11 @@ const CLI_CONVENTIONS = { G_r: 'G', g_r: 'g', D_r: 'D', GK_r: 'GK', R_r: 'R', rh
     setLayer(!!st.histogram);
     if (CLI_CONVENTIONS[st.pdf_type]) S.conv = CLI_CONVENTIONS[st.pdf_type];
     S.rad = st.radiation === 'neutron' ? 'neutron' : 'xray';
-    await loadText(pre.file, pre.text);
+    const first = await loadText(pre.file, pre.text);
+    if (st.deuteration != null) {
+      S.entries.filter((x) => x.text === first.text).forEach((x) => { x.deut = st.deuteration; });
+      $('deut').value = st.deuteration;
+      updatePdf(false);
+    }
   } catch (err) { fail(err); }
 })();

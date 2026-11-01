@@ -37,7 +37,7 @@
     </section>
 
     <section class="card">
-      <h2><span class="num">2</span>Calculation <i class="info" data-tip="The distances between all atom pairs up to r max + 1 Å are sorted into histograms of width 'bin width', one per element pair, and weighted with bᵢbⱼ/⟨b⟩², which gives the weighted radial distribution function R(r) of Peterson et al. (2021), eq. 15 (X-ray scattering lengths b = Z·rₑ); the neutron functions are derived from them with the neutron weights. All functions are normalised per atom, so the result does not depend on the cell setting in the CIF. Partly occupied sites contribute with the product of both occupancies.&#10;Only these two settings need a recalculation; everything in box 3 is applied instantly."></i></h2>
+      <h2><span class="num">2</span>Calculation <i class="info" data-tip="The distances between all atom pairs up to r max + 2.4 Å are sorted into histograms of width 'bin width', one per element pair, and weighted with bᵢbⱼ/⟨b⟩², which gives the weighted radial distribution function R(r) of Peterson et al. (2021), eq. 15 (X-ray scattering lengths b = Z·rₑ); the neutron functions are derived from them with the neutron weights. All functions are normalised per atom, so the result does not depend on the cell setting in the CIF. Partly occupied sites contribute with the product of both occupancies.&#10;Only these two settings need a recalculation; everything in box 3 is applied instantly."></i></h2>
       <div class="settings">
         <span class="sl">r max</span>
         <span class="sv"><input type="number" id="rMax" value="20" min="1" max="100" step="1"> Å</span>
@@ -127,6 +127,10 @@
         <button data-conv="D" data-rad="neutron"><var>D</var>(<var>r</var>)</button>
         <button data-conv="GK" data-rad="neutron"><var>G</var><sub>K</sub>(<var>r</var>)</button>
         <button data-conv="T" data-rad="neutron"><var>T</var>(<var>r</var>)</button>
+      </div>
+      <div class="settings deut">
+        <span class="sl">deuteration <i class="info" data-tip="Percentage of D among the H atoms of the structure, for the neutron functions. The coherent scattering length of H changes linearly from natural hydrogen (0.015 % D, b = −3.739 fm) to deuterium (100 %, b = 6.671 fm); 0 % is pure ¹H (b = −3.741 fm). Sites given as D in the CIF file stay D. Applied instantly; every structure keeps its own value. Not available for structures without hydrogen."></i></span>
+        <span class="sv"><input type="number" id="deut" value="0.015" min="0" max="100" step="any"> % D</span>
       </div>
       <div id="formula" class="formula"></div>
 

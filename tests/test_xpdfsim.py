@@ -11,7 +11,9 @@ import numpy as np
 
 from xPDFsim import server, structure
 from xPDFsim.cif import parse_symop, read_structures
+from xPDFsim.elements import D_NATURAL, NEUTRON_B, hydrogen_b
 from xPDFsim.main import simulate_pdf
+from xPDFsim.pdf import pair_weights
 from xPDFsim.structure import Structure, cell_matrix
 
 EXAMPLES = os.path.join(os.path.dirname(__file__), os.pardir, "xPDFsim", "static", "examples")
@@ -150,6 +152,40 @@ class TestPdf(unittest.TestCase):
         table, _, _ = simulate_pdf(example("4002052.cif"), "rho_r", 20, 0.01, 0.1, False)
         tail = table["radii"] > 10
         self.assertGreater(table["H-H"][tail].mean(), 1e-6)
+
+
+class TestDeuteration(unittest.TestCase):
+    def test_hydrogen_b(self):
+        self.assertAlmostEqual(hydrogen_b(D_NATURAL), NEUTRON_B["H"])
+        self.assertAlmostEqual(hydrogen_b(100), NEUTRON_B["D"])
+        self.assertAlmostEqual(hydrogen_b(0), -3.7406, places=3)        # 1H
+        for bad in (-1, 101):
+            with self.assertRaises(ValueError):
+                hydrogen_b(bad)
+
+    def test_full_deuteration_equals_d_sites(self):
+        s = example("1566501.cif")                                      # urea, CH4N2O
+        d = Structure(s.lattice, s.frac, [{("D" if el == "H" else el): o for el, o in sp.items()}
+                                          for sp in s.species])
+        w_h, b2_h = pair_weights(s, "neutron", 100)
+        w_d, b2_d = pair_weights(d, "neutron")
+        self.assertAlmostEqual(b2_h, b2_d)
+        for label, w in w_h.items():
+            self.assertAlmostEqual(w["W"], w_d[label.replace("H", "D")]["W"])
+        # natural is the default, and the X-ray weights do not depend on the deuteration
+        self.assertEqual(pair_weights(s, "neutron"), pair_weights(s, "neutron", D_NATURAL))
+        self.assertEqual(pair_weights(s, "xray", 50), pair_weights(s, "xray"))
+
+    def test_distance_weights_in_b_h(self):
+        # the neutron weight of every type is n b_i b_j of its representative pair, for any b_H
+        s = example("1566501.cif")
+        t = server.distance_types(s, 6)
+        for d in (0, D_NATURAL, 37, 100):
+            b_h = hydrogen_b(d)
+            b = [sum((b_h if el == "H" else NEUTRON_B[el]) * o for el, o in sp.items()) for sp in s.species]
+            for k in range(len(t["d"])):
+                w = t["wn0"][k] + t["wn1"][k] * b_h + t["wn2"][k] * b_h**2
+                self.assertAlmostEqual(w, t["n"][k] * b[t["i"][k]] * b[t["j"][k]], delta=1e-4 * (1 + abs(w)))
 
 
 class TestServer(unittest.TestCase):

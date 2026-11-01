@@ -75,6 +75,7 @@ label.off input, label.off button { cursor: not-allowed; }
 .settings .sv { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .settings input[type=number] { width: 64px; }
 .settings input[type=range] { flex: 1; min-width: 80px; }
+.settings.deut { margin: 6px 0 0; }
 .settings .val { min-width: 52px; font-variant-numeric: tabular-nums; color: var(--muted); }
 label.chk { display: flex; align-items: center; gap: 5px; margin: 5px 0; }
 /* exclusive choice: round buttons, filled when selected */

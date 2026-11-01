@@ -26,8 +26,8 @@ import math
 import numpy as np
 
 from .cif import read_structures
-from .elements import ATOMIC_NUMBERS, COVALENT_RADII, color, is_metal
-from .pdf import NEUTRON_B, gen_R_r, pair_weights, partial_labels
+from .elements import ATOMIC_NUMBERS, COVALENT_RADII, D_NATURAL, color, is_metal
+from .pdf import NEUTRON_B, gen_R_r, pair_weights, partial_labels, scattering_length
 
 STATIC = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"))
 MAX_BODY = 50 * 1024 * 1024     # bytes of a request
@@ -111,8 +111,10 @@ def structure_payload(structure):
 
 
 def pdf_payload(structure, r_max, dr):
-    """R(r) histograms of all element pairs, with the pair weights and <b_coh>^2 needed to
-    convert them into the other functions."""
+    """R(r) histograms of all element pairs, with the X-ray pair weights and <b_coh>^2 needed to
+    convert them into the other functions. For neutrons, the browser calculates the weights
+    from the scattering lengths and atomic fractions, as b of H depends on the deuteration
+    chosen there (b_H = b(natural H) at d_natural % D, linear up to b_D at 100 %)."""
     if not 0 < r_max <= MAX_R:
         raise ClientError(f"r max must be between 0 and {MAX_R:g} Å.")
     if not 0 < dr or (r_max + R_EXTRA) / dr > MAX_BINS:
@@ -120,10 +122,13 @@ def pdf_payload(structure, r_max, dr):
     start = time.time()
     table, rho = gen_R_r(structure, r_max, dr, verbose=False, r_extra=R_EXTRA)
     weights, mean_b2 = pair_weights(structure)
-    # neutron weights: the browser converts the X-ray partials with the ratio of the bb factors
+    # neutrons: the browser converts the X-ray partials with the ratio of the bb factors
+    composition = structure.composition()
+    total = sum(composition.values())
     try:
-        n_weights, n_mean_b2 = pair_weights(structure, "neutron")
-        neutron = {"weights": n_weights, "mean_b2": n_mean_b2}
+        neutron = {"b": {el: scattering_length(el, "neutron") for el in composition},
+                   "fraction": {el: amount / total for el, amount in composition.items()},
+                   "b_D": NEUTRON_B["D"], "d_natural": D_NATURAL}
     except ValueError as e:
         neutron = {"error": str(e)}
     return {
@@ -157,25 +162,27 @@ def distance_types(structure, r_max):
         dictionary: Per type the distance "d", the representative pair "i", "j"
         (atom indices of the viewer) and "img" (cell offset of j), the number
         of pairs per cell "n" and the weight "w" (sum over the pairs of the
-        occupancies times atomic numbers of both atoms); "wn" is the same with
-        the neutron scattering lengths (signed) and "norm_n" its normalisation.
-        "norm" converts a weight into the area of the type in R(r):
-        area = norm * w, with norm = 2 / (N <Z>^2) (both directions of every
-        pair, per atom).
+        occupancies times atomic numbers of both atoms). "norm" converts a weight
+        into the area of the type in R(r): area = norm * w, with
+        norm = 2 / (N <Z>^2) (both directions of every pair, per atom).
+        With neutrons, the weight (sum of the signed b_i b_j) depends on the
+        scattering length b_H of H, which the deuteration sets in the browser:
+        w_n = wn0 + wn1 b_H + wn2 b_H^2; its norm follows from <b> there.
     """
     _, label_index = np.unique(np.array(structure.labels), return_inverse=True)
     weight = structure.site_weights(ATOMIC_NUMBERS)
+    # neutron scattering length of every site: u + v b_H, with v the occupancy of H
     try:
-        b_n = structure.site_weights(NEUTRON_B)
+        u = np.array([sum(NEUTRON_B[el] * occ for el, occ in sp.items() if el != "H") for sp in structure.species])
+        v = np.array([sp.get("H", 0.0) for sp in structure.species])
     except KeyError:
-        b_n = None
+        u = v = None
     centers, neighbors, offsets, distances = structure.neighbor_list(r_max)
     # every pair once (the neighbor list contains both directions)
     image_key = offsets[:, 0] * 10**6 + offsets[:, 1] * 10**3 + offsets[:, 2]
     once = (centers < neighbors) | ((centers == neighbors) & (image_key > 0))
     c, n, off, d = centers[once], neighbors[once], offsets[once], distances[once]
     w = weight[c] * weight[n]
-    wn = b_n[c] * b_n[n] if b_n is not None else np.zeros(len(d))
 
     # group by (label pair, distance to 0.001 Å); np.unique gives the first pair of every group
     la, lb = np.minimum(label_index[c], label_index[n]), np.maximum(label_index[c], label_index[n])
@@ -183,11 +190,15 @@ def distance_types(structure, r_max):
     _, first, inverse, count = np.unique(keys, axis=0, return_index=True, return_inverse=True, return_counts=True)
     inverse = inverse.ravel()
     w_sum = np.bincount(inverse, weights=w)
-    wn_sum = np.bincount(inverse, weights=wn)
+    if u is not None:
+        wn = [np.bincount(inverse, weights=x) for x in (u[c] * u[n], u[c] * v[n] + v[c] * u[n], v[c] * v[n])]
+    else:
+        wn = [np.zeros(len(first))] * 3
     dk = np.round(d[first], 3)
 
     # keep the strongest types of every window, by X-ray and by neutron weight (with neutrons,
-    # pairs with H can be strong although their X-ray weight is small), then sort by distance
+    # pairs with H can be strong although their X-ray weight is small), with neutrons for
+    # hydrogen and for deuterium, then sort by distance
     window = np.floor(dk / TYPE_WINDOW).astype(np.int64)
 
     def strongest(weights):
@@ -196,18 +207,19 @@ def distance_types(structure, r_max):
         rank = np.arange(len(order)) - np.repeat(starts, np.diff(np.r_[starts, len(order)]))
         return order[rank < TYPES_PER_WINDOW]
 
-    keep = np.union1d(strongest(w_sum), strongest(np.abs(wn_sum)))
+    wn_at = lambda b_h: wn[0] + wn[1] * b_h + wn[2] * b_h**2
+    keep = strongest(w_sum)
+    for b_h in (NEUTRON_B["H"], NEUTRON_B["D"]):
+        keep = np.union1d(keep, strongest(np.abs(wn_at(b_h))))
     keep = keep[np.argsort(dk[keep], kind="stable")]
     rows = first[keep]
 
     n_atoms = structure.num_atoms()
     mean_z = weight.sum() / n_atoms
-    mean_bn = b_n.sum() / n_atoms if b_n is not None else 0.0
     return {
         "norm": 2 / (n_atoms * mean_z**2),
-        # neutrons: signed weights (sum of b_i b_j) and their normalisation
-        "wn": [float(f"{x:.4g}") for x in wn_sum[keep]] if b_n is not None else None,
-        "norm_n": 2 / (n_atoms * mean_bn**2) if abs(mean_bn) > 1e-6 else None,
+        # neutrons: coefficients of the signed weights in b_H (None without scattering lengths)
+        **{f"wn{k}": [float(f"{x:.6g}") for x in wn[k][keep]] if u is not None else None for k in range(3)},
         "d": dk[keep].tolist(), "n": count[keep].tolist(),
         "w": [float(f"{x:.4g}") for x in w_sum[keep]],
         "i": c[rows].tolist(), "j": n[rows].tolist(), "img": off[rows].tolist(),

@@ -33,6 +33,9 @@ This calculates the PDF and shows it, together with the structure, in the graphi
    * - ``--radiation``
      - ``xray`` or ``neutron``: the scattering lengths that weight the atom pairs
      - ``xray``
+   * - ``--deuteration``
+     - Neutrons: percentage of D among the H atoms. The scattering length of H changes linearly from natural hydrogen to D (0: pure :sup:`1`\ H); sites given as D in the cif file stay D
+     - 0.015 (natural abundance)
    * - ``-r``, ``--r_max``
      - Maximum distance in Å
      - 20
@@ -58,7 +61,7 @@ For example, this saves the neutron :math:`G(r)` without opening the browser:
 
     xPDFsim -p G_r --radiation neutron -o --no-plot example.cif
 
-The csv file is named after the cif file, the function and, for neutrons, ``_neutron``, e.g. *example_G_r_neutron.csv*. Its columns are the distance ``radii`` (in Å), one column per element pair (the partials, which add up to the total) and ``total``. The broadened functions are given on a grid of 0.02 Å up to r max, the histograms at the bin centres. Note that on file systems that do not distinguish upper and lower case (the default on macOS and Windows), *example_g_r.csv* and *example_G_r.csv* are the same file.
+The csv file is named after the cif file, the function and, for neutrons, ``_neutron``, e.g. *example_G_r_neutron.csv*; with a deuteration other than the natural one, it is added, e.g. *example_G_r_neutron_D100.csv*. Its columns are the distance ``radii`` (in Å), one column per element pair (the partials, which add up to the total) and ``total``. The broadened functions are given on a grid of 0.02 Å up to r max, the histograms at the bin centres. Note that on file systems that do not distinguish upper and lower case (the default on macOS and Windows), *example_g_r.csv* and *example_G_r.csv* are the same file.
 
 The command line reads cif files only. A file may contain several structures (data blocks); the command line tool uses the first one, the GUI offers all of them.
 
@@ -95,6 +98,7 @@ The histograms are calculated up to *r max* with the *bin width* given here, for
 PDF options (box 3)
 ===================
 * **Convention**: the function shown, for X-rays (upper rows: :math:`G(r)`, :math:`g(r)`, :math:`D(r)`, :math:`G_\mathrm{K}(r)`, :math:`R(r)`, :math:`\rho(r)`, :math:`T(r)`, :math:`N(r)`) or neutrons (lower row: the functions most used with neutrons). The box below the buttons gives the definition, the unit and :math:`\langle b \rangle^2` of the structure. Switching between functions is animated and needs no recalculation.
+* **Deuteration**: for the neutron functions, the percentage of D among the H atoms of the structure (default: the natural abundance, 0.015 %). Every structure keeps its own value; it is not available for structures without hydrogen.
 * **Broadening**: the standard deviation σ of the Gaussian broadening (up to 0.4 Å), and whether the broadened function or the histogram is shown. 
 * **r range**: the range of the plot.
 * **Curves**: the total and the element–element partials, and the asymptotes of the function (its low-r and high-r limits, Table 4 of Peterson *et al.*). Click a name to hide or show the curve. For X-rays, pairs with hydrogen are hidden at first, as H scatters X-rays weakly; for neutrons they are shown.

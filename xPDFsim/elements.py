@@ -33,6 +33,19 @@ NEUTRON_B = {
     "D": 6.671,
 }
 
+# natural abundance of D in hydrogen in % (Neutron Data Booklet), the default deuteration
+D_NATURAL = 0.015
+
+
+def hydrogen_b(deuteration=D_NATURAL):
+    """Coherent neutron scattering length in fm of hydrogen with the given percentage of D among
+    its atoms, interpolated linearly between natural H and D (0 %: 1H, -3.7406 fm)."""
+    if not 0 <= deuteration <= 100:
+        raise ValueError("The deuteration must be between 0 and 100 %.")
+    b_h, b_d = NEUTRON_B["H"], NEUTRON_B["D"]
+    return b_h + (deuteration - D_NATURAL) / (100 - D_NATURAL) * (b_d - b_h)
+
+
 COVALENT_RADII = {
     "H": 0.31, "He": 0.28, "Li": 1.28, "Be": 0.96, "B": 0.84, "C": 0.76, "N": 0.71,
     "O": 0.66, "F": 0.57, "Ne": 0.58, "Na": 1.66, "Mg": 1.41, "Al": 1.21, "Si": 1.11,

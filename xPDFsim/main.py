@@ -3,6 +3,7 @@ import argparse
 import sys
 from .cif import read_structures
 from .pdf import CONVENTIONS, RADIATIONS, baselines, convert_R_r, gen_R_r, pair_weights, write_csv
+from .elements import D_NATURAL
 from .utils import broaden_pdfs
 
 
@@ -33,7 +34,7 @@ def broaden_or_truncate(table, sigma, r_max, histogram, baseline=None):
     return out
 
 
-def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="xray"):
+def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="xray", deuteration=D_NATURAL):
     """Calculates a real-space function of a structure.
 
     Args:
@@ -44,6 +45,7 @@ def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="
         sigma (float): Standard deviation for Gaussian broadening.
         histogram (Boolean): If True, no gaussian broadening is applied.
         radiation (string): "xray" or "neutron".
+        deuteration (float): Percentage of D among the H atoms (neutrons).
 
     Returns:
         dictionary: Table of the (broadened) function and its partials.
@@ -52,8 +54,8 @@ def simulate_pdf(structure, convention, r_max, dr, sigma, histogram, radiation="
     """
     # the Gaussians reach about 6 sigma beyond r_max
     r_extra = 0.0 if histogram else max(1.0, 6 * sigma)
-    table, rho = gen_R_r(structure, r_max, dr=dr, radiation=radiation, r_extra=r_extra)
-    weights, mean_b2 = pair_weights(structure, radiation)
+    table, rho = gen_R_r(structure, r_max, dr=dr, radiation=radiation, r_extra=r_extra, deuteration=deuteration)
+    weights, mean_b2 = pair_weights(structure, radiation, deuteration)
     converted = convert_R_r(table, rho, convention, weights, mean_b2)
     labels = [label for label in converted if label != "radii"]
     baseline = lambda r: baselines(convention, r, rho, weights, mean_b2, labels)
@@ -65,7 +67,8 @@ def show_in_gui(args, text):
     command line, until Ctrl+C is pressed."""
     from .server import serve
     settings = {"pdf_type": args.pdf_type, "radiation": args.radiation, "r_max": args.r_max,
-                "dr": args.bin_width, "sigma": args.sigma, "histogram": args.histogram}
+                "dr": args.bin_width, "sigma": args.sigma, "histogram": args.histogram,
+                "deuteration": args.deuteration}
     preload = {"file": os.path.basename(args.input_file), "text": text, "settings": settings}
     serve(preload=preload)
 
@@ -89,7 +92,7 @@ def main(args):
     try:
         table, rho, mean_b2 = simulate_pdf(structure, args.pdf_type, args.r_max,
                                            args.bin_width, args.sigma,
-                                           args.histogram, args.radiation)
+                                           args.histogram, args.radiation, args.deuteration)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -97,6 +100,8 @@ def main(args):
     if args.output:
         compound = os.path.splitext(os.path.basename(args.input_file))[0]
         suffix = "_neutron" if args.radiation == "neutron" else ""
+        if args.radiation == "neutron" and args.deuteration != D_NATURAL and "H" in structure.composition():
+            suffix += f"_D{args.deuteration:g}"
         filename = f"{compound}_{args.pdf_type}{suffix}.csv"
         write_csv(table, filename)
         print(f"Output file saved as {filename}")
@@ -112,6 +117,14 @@ def positive_float(value):
     number = float(value)
     if number <= 0:
         raise argparse.ArgumentTypeError(f"{value} is not a positive number")
+    return number
+
+
+def percentage(value):
+    """argparse type that only accepts numbers from 0 to 100."""
+    number = float(value)
+    if not 0 <= number <= 100:
+        raise argparse.ArgumentTypeError(f"{value} is not between 0 and 100")
     return number
 
 
@@ -137,6 +150,11 @@ def cli():
                         default="xray",
                         choices=list(RADIATIONS),
                         help="Radiation whose scattering lengths weight the pairs: xray (b = Z r_e) or neutron (coherent scattering lengths). Default: xray")
+
+    parser.add_argument("--deuteration",
+                        type=percentage,
+                        default=D_NATURAL,
+                        help=f"Neutrons: percentage of D among the H atoms of the structure (sites given as D stay D). Default: {D_NATURAL:g} (natural abundance)")
 
     parser.add_argument("-r", "--r_max",
                         type=positive_float,
